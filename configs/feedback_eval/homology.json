@@ -1,0 +1,23 @@
+{
+  "version": "homology-v1",
+  "source_sha256": "d2ada7da94a38cfe406351614c4e686846ed2da6d1b339db95fa5ead19554a4a",
+  "policy": "Groups contain items that share the same user task after human inspection. Shared constraint templates with different user requests are not grouped. Items absent from these groups are unknown; this file does not claim training-data isolation or that all related tasks were found.",
+  "groups": [
+    {
+      "ids": ["68", "109"],
+      "rationale": "Same only-child user request (solitary birthdays, parental bonds, family expectations; question about how being an only child shapes relationships). Constraints differ: emoji at the end of every sentence vs nested parentheses."
+    },
+    {
+      "ids": ["146", "158"],
+      "rationale": "Same axisymmetric continuity-equation proof (governing scalar equations, ∂(yu)/∂x + ∂(yv)/∂y = 0, prove step by step). Constraints differ: trigram overlap vs balanced sentence types plus consonant clusters."
+    },
+    {
+      "ids": ["167", "168"],
+      "rationale": "Same dissertation question on evolving scam tactics in the digital age. One item asks how to gather sources; the other asks for a literature review with citations. The unique question text is identical, so putting one in dev and one in test would leak the task."
+    },
+    {
+      "ids": ["273", "283"],
+      "rationale": "Identical user query 'What animal is the national symbol of the US?'. Constraints differ only by reversing the sentence per letter vs per word."
+    }
+  ]
+}

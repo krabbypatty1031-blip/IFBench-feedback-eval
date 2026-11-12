@@ -75,3 +75,39 @@ NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m run_eval \
 | loose 提示级准确率 | 0.313333 |
 
 `sample_output.jsonl` 是官方示例回答，不是本实验模型结果。仓库内已有 `eval/eval_results_*.jsonl` 行数与命名不同，Task 1 以 `/tmp/ifbench-baseline` 这次运行为准。
+
+## Task 2：划分与数据清单
+
+划分不改写 `data/IFBench_test.jsonl`。组来自两处：规范化 prompt 的完全重复，以及 `configs/feedback_eval/homology.json` 中附依据的人工同源。未列入的题目记为 unknown，不宣称已消除同源或训练污染。
+
+### 测试（实现前为 RED）
+
+```text
+NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_eval/test_split.py -q
+# ERROR collecting ... ImportError: cannot import name 'SPLIT_ALGORITHM_VERSION'
+```
+
+实现后：
+
+```bash
+NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_eval/test_split.py tests/feedback_eval/test_dataset.py -q
+# 21 passed（含独立进程重复生成并比对 split_sha256）
+```
+
+### 候选划分（seed=42，算法 split-v1）
+
+```bash
+.venv/bin/python -c "from pathlib import Path; from feedback_eval.dataset import build_split_manifest, load_items, write_split_manifest; p=Path('data/IFBench_test.jsonl'); m=build_split_manifest(load_items(p), p, Path('configs/feedback_eval/homology.json'), 42, 40); write_split_manifest(Path('configs/feedback_eval/split.json'), m); print(m['n_dev'], m['n_test'], m['split_sha256'], m['quota_reason'])"
+```
+
+| 项 | 值 |
+| --- | --- |
+| 开发 / 测试 | 40 / 260（配额可精确满足，`quota_reason` 为空） |
+| 组数 | 296（4 个人工同源组，0 个规范化重复组，292 个 unknown 单题） |
+| 人工同源 | `{68,109}` `{146,158}` `{167,168}` `{273,283}`，本种子下均在测试集 |
+| 开发集 | 单约束 36、双约束 4、27 类约束 |
+| 测试集 | 单约束 220、双约束 40、57 类约束 |
+| `split_sha256` | `41ec3bf4e6a83079a2a7d824f0892e4f52df425e598896cd03900239e5421241` |
+| 源数据 SHA-256 | 生成前后不变，仍为协议中的官方哈希 |
+
+11 个仅出现一次的 `custom:*` 约束无法同时进入开发集和测试集。同源审查只覆盖人工能确认的同一用户任务；其余关系未知。

@@ -55,10 +55,10 @@
 
 **Interfaces:** `split_groups(groups: list[list[str]], dev_target: int, seed: int) -> tuple[list[str], list[str]]`; `validate_split(all_ids: set[str], dev: list[str], test: list[str]) -> None`。
 
-- [ ] 编写测试：相同 seed 同结果；同组不分割；两个集合无交叉且覆盖全部 ID；不可能恰好分配时返回实际数量并记录原因。
-- [ ] 固定 seed 42；通过规范化文本的完全重复和人工审计的同源映射生成组，人工映射单独保存并附依据；未知关系记为未知，不宣称消除污染。
-- [ ] 输出包含来源哈希、算法版本、组映射、ID 列表、类别分布和划分哈希的清单；不得改写原始 JSONL。
-- [ ] 运行 `.venv/bin/python -m pytest tests/feedback_eval/test_split.py -q`；用独立进程重复生成，比较清单哈希，验收后冻结候选划分。
+- [x] 编写测试：相同 seed 同结果；同组不分割；两个集合无交叉且覆盖全部 ID；不可能恰好分配时返回实际数量并记录原因。
+- [x] 固定 seed 42；通过规范化文本的完全重复和人工审计的同源映射生成组，人工映射单独保存并附依据；未知关系记为未知，不宣称消除污染。
+- [x] 输出包含来源哈希、算法版本、组映射、ID 列表、类别分布和划分哈希的清单；不得改写原始 JSONL。
+- [x] 运行 `.venv/bin/python -m pytest tests/feedback_eval/test_split.py -q`；用独立进程重复生成，比较清单哈希，验收后冻结候选划分。
 
 ### Task 3: 官方评分与反馈
 
