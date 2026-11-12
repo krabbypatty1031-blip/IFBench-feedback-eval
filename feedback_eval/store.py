@@ -73,6 +73,10 @@ _CALL_COUNTERS = (
     "missing_usage",
     "error",
 )
+# inspect_prior_ledger uses these statuses with spent/balance left as None.
+_UNVERIFIED_PRIOR_STATUSES = frozenset(
+    {"unverified_missing", "unverified_unparsed"}
+)
 
 
 class StoreError(Exception):
@@ -234,8 +238,15 @@ class RunStore:
                 )
             logger.info("Resuming run directory %s", self.root)
             return
-        if prior.get("spent") == 0 and prior.get("status") == "unverified_missing":
-            raise StoreError("refusing to treat an unverified prior ledger as zero spend")
+        # Missing/unparsed ledgers initialize only with unknown amounts.
+        # `spent is None` is the honest inspect_prior_ledger() result; `== 0`
+        # would miss forged non-zero values and would not fire on None.
+        if prior.get("status") in _UNVERIFIED_PRIOR_STATUSES and (
+            prior.get("spent") is not None or prior.get("balance") is not None
+        ):
+            raise StoreError(
+                "refusing to treat an unverified prior ledger as a known spend or balance"
+            )
         ledger = {
             "schema_version": STORE_SCHEMA_VERSION,
             "config_fingerprint": fingerprint,
@@ -562,10 +573,7 @@ def estimate_budget(
     cost_status = "unknown"
     currency = (prices or {}).get("currency") or "USD"
     verified_prices = (
-        prices
-        and prices.get("source") == "verified"
-        and prices.get("input_per_million") is not None
-        and prices.get("output_per_million") is not None
+        _unit_price_is_verified(prices)
         and observed_usage
         and observed_usage.get("n_outputs")
     )
@@ -652,16 +660,25 @@ def _require_freeze_fields(freeze: dict[str, Any]) -> None:
         raise IncompleteFreezeError(f"incomplete freeze, missing={missing}")
 
 
+def _unit_price_is_verified(price: dict[str, Any] | None) -> bool:
+    """True only when both input and output prices are present and sourced."""
+    if not price:
+        return False
+    return (
+        price.get("source") == "verified"
+        and price.get("input_per_million") is not None
+        and price.get("output_per_million") is not None
+    )
+
+
 def _ready_for_official_run(config: dict[str, Any], source_hashes: dict[str, Any]) -> bool:
     """Official runs need verified models, prices, and a numeric cost cap."""
     models = config.get("models") or []
     models_ok = bool(models) and all(
         model.get("id") and model.get("availability") == "verified" for model in models
     )
-    prices_ok = all(
-        (model.get("unit_price") or {}).get("source") == "verified"
-        and (model.get("unit_price") or {}).get("input_per_million") is not None
-        for model in models
+    prices_ok = bool(models) and all(
+        _unit_price_is_verified(model.get("unit_price")) for model in models
     )
     cap = config.get("cost_cap") or {}
     paid = config.get("paid_trial") or {}

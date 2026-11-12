@@ -8,6 +8,7 @@ balance are all present. Tests never open sockets or spend.
 
 from __future__ import annotations
 
+import copy
 import json
 from pathlib import Path
 
@@ -124,6 +125,39 @@ def _config(**overrides: object) -> dict:
     return payload
 
 
+def _verified_unit_price() -> dict:
+    return {
+        "input_per_million": 1.0,
+        "output_per_million": 2.0,
+        "currency": "USD",
+        "source": "verified",
+    }
+
+
+def _ready_config() -> dict:
+    """A freeze payload that should be eligible for an official run."""
+    return _config(
+        models=[
+            {
+                "slot": "model_a",
+                "id": "vendor/model-a",
+                "api_base": "https://example.invalid/v1",
+                "availability": "verified",
+                "unit_price": _verified_unit_price(),
+            },
+            {
+                "slot": "model_b",
+                "id": "vendor/model-b",
+                "api_base": "https://example.invalid/v1",
+                "availability": "verified",
+                "unit_price": _verified_unit_price(),
+            },
+        ],
+        cost_cap={"amount": 50.0, "currency": "USD", "status": "confirmed"},
+        paid_trial={"allowed": True, "reason": None},
+    )
+
+
 def _fingerprint_config() -> dict:
     return {
         "protocol": "feedback-eval-dev-v1",
@@ -184,6 +218,23 @@ def test_build_freeze_pins_hashes_and_is_stable() -> None:
     assert first["ready_for_official_run"] is False
     assert first["models"][0]["id"] is None
     assert len(first["models"]) == 2
+
+
+def test_ready_for_official_run_requires_input_and_output_prices() -> None:
+    """Official readiness must match estimate_budget: both unit prices present."""
+    hashes = _hashes()
+    ready = build_freeze(_ready_config(), hashes)
+    assert ready["ready_for_official_run"] is True
+
+    missing_output = _ready_config()
+    missing_output["models"] = copy.deepcopy(missing_output["models"])
+    missing_output["models"][1]["unit_price"]["output_per_million"] = None
+    assert build_freeze(missing_output, hashes)["ready_for_official_run"] is False
+
+    missing_input = _ready_config()
+    missing_input["models"] = copy.deepcopy(missing_input["models"])
+    missing_input["models"][0]["unit_price"]["input_per_million"] = None
+    assert build_freeze(missing_input, hashes)["ready_for_official_run"] is False
 
 
 def test_validate_resume_accepts_identical_freeze() -> None:

@@ -23,6 +23,7 @@ from feedback_eval.store import (
     IncompleteLedgerError,
     ResumeConflictError,
     RunStore,
+    StoreError,
     config_fingerprint,
     inspect_prior_ledger,
     record_key,
@@ -188,6 +189,28 @@ def test_missing_prior_ledger_is_unverified_not_zero() -> None:
     assert prior["balance"] is None
     assert prior["unit_prices"] is None
     assert prior["spent"] != 0
+
+
+def test_initialize_rejects_known_amounts_on_unverified_prior(tmp_path: Path) -> None:
+    """Missing ledgers may start a run only when spend/balance stay unknown.
+
+    `spent is None` is the honest inspect_prior_ledger() result. Forging 0 or
+    any other number would treat unverifiable history as a known amount.
+    """
+    honest = inspect_prior_ledger([])
+    assert honest["spent"] is None
+    assert honest["balance"] is None
+    RunStore(tmp_path / "honest").initialize(_config(), honest)
+
+    for forged in (
+        {**honest, "spent": 0},
+        {**honest, "spent": 0.0},
+        {**honest, "spent": 12.5},
+        {**honest, "balance": 0},
+        {**honest, "status": "unverified_unparsed", "spent": 0},
+    ):
+        with pytest.raises(StoreError, match="unverified prior ledger"):
+            RunStore(tmp_path / f"forged-{id(forged)}").initialize(_config(), forged)
 
 
 def test_store_records_unverified_prior_and_unknown_timeout_cost(tmp_path: Path) -> None:
