@@ -15,3 +15,6 @@ build/
 
 # Response files with secrets in name
 data/*responses*.jsonl
+
+# Feedback-eval run artifacts (raw records and ledgers; do not commit secrets or receipts)
+runs/feedback_eval/

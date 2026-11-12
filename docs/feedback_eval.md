@@ -131,3 +131,22 @@ NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_ev
 | 开发集未覆盖类型 | 31 类；用全量 300 题 prompt 做结构审计，不用模型输出决定是否排除 |
 
 依赖：NLTK 数据目录；`format:emoji` 另需 `emoji`；`words:odd_even_syllables` 另需 `syllapy`；三个 CSV 自定义约束使用标准库 `csv`。
+
+## Task 4：调用与预算存储
+
+身份是 `(protocol, model, item_id, condition, repeat)`，不用 prompt 文本续跑。`FakeClient` 覆盖成功、超时、限流、截断、缺 usage、空回答；这些状态不是拒答，也不等于评分失败。密钥只从环境变量 `API_KEY` / `FEEDBACK_EVAL_API_KEY` 读取，不写入记录。配置指纹包含数据哈希、模型、提示哈希、代码版本和参数。
+
+```bash
+NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_eval/test_client_store.py -q
+# 13 passed；测试不发起网络或付费调用
+```
+
+此前账本核对（本仓库，2026-11-12）：
+
+| 候选路径 | 状态 |
+| --- | --- |
+| `runs/feedback_eval/ledger.json` | 不存在 |
+| `runs/feedback_eval/budget.json` | 不存在 |
+| `docs/budget_ledger.json` | 不存在 |
+
+`inspect_prior_ledger` 结果：`status=unverified_missing`，`spent=None`，`balance=None`，`unit_prices=None`。**不得把历史支出或余额当成 0。** 超时调用记入 `pending_unverified`，费用保持 unknown。开发和正式运行使用不同 `RunStore` 根目录。

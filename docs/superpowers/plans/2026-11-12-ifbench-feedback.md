@@ -77,10 +77,10 @@
 
 **Interfaces:** `Client.generate(messages: list[dict], settings: dict) -> dict`；结果字段 `text`, `usage`, `finish_reason`, `latency_ms`, `error`。`record_key(protocol: str, model: str, item_id: str, condition: str, repeat: int) -> str`。
 
-- [ ] 使用假客户端测试成功、超时、限流、截断、无 usage 和重复请求；确认异常、空回答和截断不会标为正常拒答或自动评分失败。
-- [ ] 实现可配置 API base、模型及参数；密钥仅由环境读取；记录调用与计量，未知费用明确为未知。规范 JSON 指纹含数据、模型、提示、代码版本和参数。
-- [ ] 实现原子写入与安全恢复；同一身份不同内容、配置指纹变化或不完整账本必须拒绝续跑。并发下预算使用锁或单进程分配，超时费用未知时保留待核实额度。
-- [ ] 确认此前账本位置与余额；缺失则标为无法核实，不得重置。运行 `.venv/bin/python -m pytest tests/feedback_eval/test_client_store.py -q`，无网络和付费调用。
+- [x] 使用假客户端测试成功、超时、限流、截断、无 usage 和重复请求；确认异常、空回答和截断不会标为正常拒答或自动评分失败。
+- [x] 实现可配置 API base、模型及参数；密钥仅由环境读取；记录调用与计量，未知费用明确为未知。规范 JSON 指纹含数据、模型、提示、代码版本和参数。
+- [x] 实现原子写入与安全恢复；同一身份不同内容、配置指纹变化或不完整账本必须拒绝续跑。并发下预算使用锁或单进程分配，超时费用未知时保留待核实额度。
+- [x] 确认此前账本位置与余额；缺失则标为无法核实，不得重置。运行 `.venv/bin/python -m pytest tests/feedback_eval/test_client_store.py -q`，无网络和付费调用。
 
 ### Task 5: 修订流程与离线集成
 
