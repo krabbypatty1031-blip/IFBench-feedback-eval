@@ -111,3 +111,23 @@ NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_ev
 | 源数据 SHA-256 | 生成前后不变，仍为协议中的官方哈希 |
 
 11 个仅出现一次的 `custom:*` 约束无法同时进入开发集和测试集。同源审查只覆盖人工能确认的同一用户任务；其余关系未知。
+
+## Task 3：官方评分与反馈
+
+`score()` 调用官方 `evaluation_lib.test_instruction_following_strict/loose`，先深拷贝并去掉 null kwargs，避免改写原始 JSONL 对象。验证器异常记为 `error`，`all_pass` 为 `None`，不记作失败。B3 只引用 prompt 中已出现的约束原文，不把 `5.0` 这类验证器内部参数当成要求。
+
+```bash
+NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_eval/test_feedback.py -q
+# 11 passed
+```
+
+| 项 | 值 |
+| --- | --- |
+| B2 | 仅整体 strict 通过 / 未通过 |
+| B3 | 按 `instruction_id_list` 顺序给出 PASS/FAIL + prompt 原文 |
+| 无法映射 | `ConstraintMappingError`，不编造反馈 |
+| 验证器异常 | `VerifierFeedbackError`，不编造通过或失败 |
+| 58 类映射 | 全部 `supported`（见 `configs/feedback_eval/constraint_support.json`） |
+| 开发集未覆盖类型 | 31 类；用全量 300 题 prompt 做结构审计，不用模型输出决定是否排除 |
+
+依赖：NLTK 数据目录；`format:emoji` 另需 `emoji`；`words:odd_even_syllables` 另需 `syllapy`；三个 CSV 自定义约束使用标准库 `csv`。

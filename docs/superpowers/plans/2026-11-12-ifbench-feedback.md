@@ -66,10 +66,10 @@
 
 **Interfaces:** `score(item: dict, response: str) -> dict` 返回 strict、loose 的 `all_pass: bool` 与 `per_constraint: list[bool]`；`make_feedback(item: dict, strict: dict, mode: str) -> str`，mode 为 `B2` 或 `B3`。
 
-- [ ] 编写通过、失败、双约束与验证器异常测试；与 `evaluation_lib.test_instruction_following_strict/loose` 对比，断言 B3 状态与约束顺序一致。
-- [ ] 使用官方 `InputExample` 和严格／宽松函数，逐次复制输入以避免评分函数修改 kwargs。将异常表示为独立错误，不能转成失败。
-- [ ] B2 返回整体状态；B3 返回逐项状态和事先审核过的原始要求。无法可靠映射题目约束时抛出明确错误，不通过猜测或把验证器内部参数直接假装成自然语言要求。
-- [ ] 开发集审计反馈正确性；记录 58 类规则的资源与支持情况。不为正式测试观察结果来决定排除。运行 `.venv/bin/python -m pytest tests/feedback_eval/test_feedback.py -q`，全部通过。
+- [x] 编写通过、失败、双约束与验证器异常测试；与 `evaluation_lib.test_instruction_following_strict/loose` 对比，断言 B3 状态与约束顺序一致。
+- [x] 使用官方 `InputExample` 和严格／宽松函数，逐次复制输入以避免评分函数修改 kwargs。将异常表示为独立错误，不能转成失败。
+- [x] B2 返回整体状态；B3 返回逐项状态和事先审核过的原始要求。无法可靠映射题目约束时抛出明确错误，不通过猜测或把验证器内部参数直接假装成自然语言要求。
+- [x] 开发集审计反馈正确性；记录 58 类规则的资源与支持情况。不为正式测试观察结果来决定排除。运行 `.venv/bin/python -m pytest tests/feedback_eval/test_feedback.py -q`，全部通过。
 
 ### Task 4: 调用与预算存储
 

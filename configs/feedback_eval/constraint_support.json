@@ -1,0 +1,533 @@
+{
+  "mapping_policy": "Locate an audited surface form of Instruction.build_description inside the prompt. Never emit raw kwargs as the requirement.",
+  "n_instruction_types": 58,
+  "types": {
+    "count:conjunctions": {
+      "mapping": "supported",
+      "n_dev_items": 1,
+      "n_items": 7,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "count:keywords_multiple": {
+      "mapping": "supported",
+      "n_dev_items": 1,
+      "n_items": 5,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "count:numbers": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 8,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "count:person_names": {
+      "mapping": "supported",
+      "n_dev_items": 1,
+      "n_items": 6,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "count:pronouns": {
+      "mapping": "supported",
+      "n_dev_items": 2,
+      "n_items": 8,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "count:punctuation": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 6,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "count:unique_word_count": {
+      "mapping": "supported",
+      "n_dev_items": 2,
+      "n_items": 9,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "count:word_count_range": {
+      "mapping": "supported",
+      "n_dev_items": 2,
+      "n_items": 11,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "count:words_japanese": {
+      "mapping": "supported",
+      "n_dev_items": 1,
+      "n_items": 5,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "custom:character_reverse": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 1,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "custom:csv_city": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 1,
+      "resources": [
+        "nltk",
+        "csv"
+      ],
+      "unmapped_keys": []
+    },
+    "custom:csv_quotes": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 1,
+      "resources": [
+        "nltk",
+        "csv"
+      ],
+      "unmapped_keys": []
+    },
+    "custom:csv_special_character": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 1,
+      "resources": [
+        "nltk",
+        "csv"
+      ],
+      "unmapped_keys": []
+    },
+    "custom:date_format_list": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 1,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "custom:european_capitals_sort": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 1,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "custom:mcq_count_length": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 1,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "custom:multiples": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 1,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "custom:reverse_newline": {
+      "mapping": "supported",
+      "n_dev_items": 1,
+      "n_items": 1,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "custom:sentence_alphabet": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 1,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "custom:word_reverse": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 1,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "format:emoji": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 9,
+      "resources": [
+        "nltk",
+        "emoji"
+      ],
+      "unmapped_keys": []
+    },
+    "format:line_indent": {
+      "mapping": "supported",
+      "n_dev_items": 4,
+      "n_items": 9,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "format:list": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 9,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "format:newline": {
+      "mapping": "supported",
+      "n_dev_items": 1,
+      "n_items": 6,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "format:no_bullets_bullets": {
+      "mapping": "supported",
+      "n_dev_items": 1,
+      "n_items": 5,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "format:no_whitespace": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 4,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "format:options": {
+      "mapping": "supported",
+      "n_dev_items": 1,
+      "n_items": 6,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "format:output_template": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 4,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "format:parentheses": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 8,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "format:quote_unquote": {
+      "mapping": "supported",
+      "n_dev_items": 1,
+      "n_items": 5,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "format:quotes": {
+      "mapping": "supported",
+      "n_dev_items": 1,
+      "n_items": 8,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "format:sub-bullets": {
+      "mapping": "supported",
+      "n_dev_items": 2,
+      "n_items": 12,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "format:thesis": {
+      "mapping": "supported",
+      "n_dev_items": 2,
+      "n_items": 9,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "format:title_case": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 4,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "ratio:overlap": {
+      "mapping": "supported",
+      "n_dev_items": 2,
+      "n_items": 12,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "ratio:sentence_balance": {
+      "mapping": "supported",
+      "n_dev_items": 1,
+      "n_items": 7,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "ratio:sentence_type": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 6,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "ratio:sentence_words": {
+      "mapping": "supported",
+      "n_dev_items": 1,
+      "n_items": 7,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "ratio:stop_words": {
+      "mapping": "supported",
+      "n_dev_items": 2,
+      "n_items": 12,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "repeat:repeat_change": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 3,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "repeat:repeat_simple": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 2,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "repeat:repeat_span": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 4,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "sentence:alliteration_increment": {
+      "mapping": "supported",
+      "n_dev_items": 3,
+      "n_items": 5,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "sentence:increment": {
+      "mapping": "supported",
+      "n_dev_items": 2,
+      "n_items": 8,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "sentence:keyword": {
+      "mapping": "supported",
+      "n_dev_items": 2,
+      "n_items": 15,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "words:alphabet": {
+      "mapping": "supported",
+      "n_dev_items": 2,
+      "n_items": 6,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "words:consonants": {
+      "mapping": "supported",
+      "n_dev_items": 2,
+      "n_items": 15,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "words:keywords_specific_position": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 4,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "words:last_first": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 5,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "words:no_consecutive": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 8,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "words:odd_even_syllables": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 9,
+      "resources": [
+        "nltk",
+        "syllapy"
+      ],
+      "unmapped_keys": []
+    },
+    "words:palindrome": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 7,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "words:paragraph_last_first": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 6,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "words:prime_lengths": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 5,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "words:repeats": {
+      "mapping": "supported",
+      "n_dev_items": 1,
+      "n_items": 5,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "words:start_verb": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 6,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "words:vowel": {
+      "mapping": "supported",
+      "n_dev_items": 2,
+      "n_items": 10,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    },
+    "words:words_position": {
+      "mapping": "supported",
+      "n_dev_items": 0,
+      "n_items": 3,
+      "resources": [
+        "nltk"
+      ],
+      "unmapped_keys": []
+    }
+  }
+}
