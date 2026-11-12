@@ -7,6 +7,7 @@ and missing usage are accounting states, not refusals or score results.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import time
@@ -43,6 +44,27 @@ def _usage_unknown(usage: Any) -> bool:
         usage.get(field) is None
         for field in ("prompt_tokens", "completion_tokens", "total_tokens")
     )
+
+
+def completion_payload(
+    messages: list[dict], settings: dict, default_model: str
+) -> dict[str, Any]:
+    """Build a chat-completions body. Secrets never belong here.
+
+    DeepSeek thinking is billed and can leak chain-of-thought into IFBench
+    answers. Callers that need it off must pass `thinking: {type: disabled}`.
+    """
+    payload: dict[str, Any] = {
+        "model": settings.get("model", default_model),
+        "messages": messages,
+        "temperature": settings.get("temperature", 0.0),
+        "max_tokens": settings.get("max_tokens", 4096),
+    }
+    if settings.get("seed") is not None:
+        payload["seed"] = settings["seed"]
+    if settings.get("thinking") is not None:
+        payload["thinking"] = settings["thinking"]
+    return payload
 
 
 def classify_generation(result: dict[str, Any]) -> str:
@@ -127,14 +149,7 @@ class OpenAICompatClient:
 
     def generate(self, messages: list[dict], settings: dict) -> dict:
         """POST /chat/completions. Retries rate limits only, not timeouts."""
-        payload = {
-            "model": settings.get("model", self.model),
-            "messages": messages,
-            "temperature": settings.get("temperature", 0.0),
-            "max_tokens": settings.get("max_tokens", 4096),
-        }
-        if settings.get("seed") is not None:
-            payload["seed"] = settings["seed"]
+        payload = completion_payload(messages, settings, self.model)
         started = time.perf_counter()
         attempts = self.max_retries + 1
         last_error: dict[str, Any] | None = None
@@ -221,3 +236,26 @@ class OpenAICompatClient:
                 "error": "HTTP generate failed",
             }
         )
+
+
+def provider_root(api_base: str) -> str:
+    """Strip a trailing /v1 so account endpoints share the vendor origin."""
+    root = api_base.rstrip("/")
+    if root.endswith("/v1"):
+        root = root[:-3]
+    return root.rstrip("/")
+
+
+def fetch_user_balance(
+    api_base: str, api_key: str, timeout_s: float = 30.0
+) -> dict[str, Any]:
+    """GET /user/balance. The key is only used as a header and is never logged."""
+    url = f"{provider_root(api_base)}/user/balance"
+    logger.info("Fetching provider wallet from %s", url)
+    with httpx.Client(timeout=timeout_s) as client:
+        response = client.get(url, headers={"Authorization": f"Bearer {api_key}"})
+    response.raise_for_status()
+    payload = response.json()
+    if api_key and api_key in json.dumps(payload):
+        raise RuntimeError("provider balance payload contained the API key")
+    return payload

@@ -13,13 +13,13 @@ import json
 import logging
 import os
 import random
-import re
 import threading
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator
 
 from feedback_eval.client import classify_generation, sanitize_settings
+from feedback_eval.config import load_mapping_yaml  # compatibility re-export
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +134,142 @@ def config_fingerprint(config: dict[str, Any]) -> str:
     return _canonical_sha256(payload)
 
 
+def compute_generation_cost(
+    usage: dict[str, Any] | None, unit_price: dict[str, Any] | None
+) -> dict[str, Any]:
+    """Meter one call from usage. Cache hits are billed at the miss tariff.
+
+    Missing usage or unverified prices stay unknown; they are not zero.
+    """
+    currency = (unit_price or {}).get("currency")
+    unknown = {"amount": None, "currency": currency, "status": "unknown"}
+    if not unit_price or unit_price.get("source") != "verified":
+        return unknown
+    if unit_price.get("input_per_million") is None:
+        return unknown
+    if unit_price.get("output_per_million") is None:
+        return unknown
+    if not usage:
+        return unknown
+    prompt_tokens = usage.get("prompt_tokens")
+    completion_tokens = usage.get("completion_tokens")
+    if prompt_tokens is None or completion_tokens is None:
+        return unknown
+    amount = (
+        float(prompt_tokens) * float(unit_price["input_per_million"])
+        + float(completion_tokens) * float(unit_price["output_per_million"])
+    ) / 1_000_000.0
+    return {"amount": amount, "currency": currency, "status": "metered"}
+
+
+def _parse_verified_prior_ledger(path: Path) -> dict[str, Any] | None:
+    """Return a parsed live-wallet ledger, or None if the file is not trusted."""
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    if payload.get("schema_version") != "prior-ledger-v1":
+        return None
+    if payload.get("source") != "deepseek_user_balance":
+        return None
+    if payload.get("status") != "ok":
+        return None
+    balance = payload.get("balance")
+    if not isinstance(balance, (int, float)):
+        return None
+    spent = payload.get("spent")
+    if spent is not None and not isinstance(spent, (int, float)):
+        return None
+    logger.info(
+        "Parsed verified prior wallet %s currency=%s balance=%s spent_known=%s",
+        path,
+        payload.get("currency"),
+        balance,
+        spent is not None,
+    )
+    return {
+        "status": "ok",
+        "paths": [str(path)],
+        "spent": None if spent is None else float(spent),
+        "balance": float(balance),
+        "currency": payload.get("currency"),
+        "unit_prices": payload.get("unit_prices"),
+        "fetched_at": payload.get("fetched_at"),
+        "note": payload.get("note")
+        or "Live wallet remaining. Historical spend is not reported.",
+    }
+
+
+def wallet_from_provider_payload(
+    payload: dict[str, Any], preferred_currency: str = "CNY"
+) -> dict[str, Any]:
+    """Pick a positive wallet row. USD 0 must not mask a CNY balance."""
+    infos = payload.get("balance_infos") or []
+    preferred = None
+    fallback = None
+    for info in infos:
+        try:
+            amount = float(info.get("total_balance"))
+        except (TypeError, ValueError):
+            continue
+        row = {
+            "currency": info.get("currency"),
+            "balance": amount,
+            "granted_balance": info.get("granted_balance"),
+            "topped_up_balance": info.get("topped_up_balance"),
+        }
+        if row["currency"] == preferred_currency:
+            preferred = row
+        if fallback is None or amount > float(fallback["balance"]):
+            fallback = row
+    chosen = preferred if preferred is not None else fallback
+    if chosen is None:
+        raise StoreError("provider balance payload had no parseable wallet row")
+    logger.info(
+        "Selected wallet currency=%s balance=%s is_available=%s",
+        chosen["currency"],
+        chosen["balance"],
+        payload.get("is_available"),
+    )
+    return {
+        **chosen,
+        "is_available": payload.get("is_available"),
+        "all_rows": [
+            {
+                "currency": info.get("currency"),
+                "total_balance": info.get("total_balance"),
+            }
+            for info in infos
+        ],
+    }
+
+
+def write_prior_balance_file(path: Path, wallet: dict[str, Any]) -> dict[str, Any]:
+    """Persist a live wallet snapshot. Secrets never belong in this file."""
+    from datetime import datetime, timezone
+
+    record = {
+        "schema_version": "prior-ledger-v1",
+        "source": "deepseek_user_balance",
+        "status": "ok",
+        "currency": wallet["currency"],
+        "balance": float(wallet["balance"]),
+        "spent": None,
+        "is_available": wallet.get("is_available"),
+        "fetched_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "all_rows": wallet.get("all_rows") or [],
+        "note": (
+            "Live wallet remaining. Historical spend is not reported; "
+            "do not treat spent as zero."
+        ),
+    }
+    _atomic_write_json(Path(path), record)
+    logger.info("Wrote prior wallet snapshot to %s", path)
+    return record
+
+
 def inspect_prior_ledger(candidates: list[Path]) -> dict[str, Any]:
     """Report whether a previous budget ledger exists.
 
@@ -155,6 +291,10 @@ def inspect_prior_ledger(candidates: list[Path]) -> dict[str, Any]:
             "unit_prices": None,
             "note": "No prior ledger found; do not treat historical spend as zero.",
         }
+    for path in existing:
+        parsed = _parse_verified_prior_ledger(path)
+        if parsed is not None:
+            return parsed
     logger.info("Found prior ledger files: %s", [str(path) for path in existing])
     return {
         "status": "unverified_unparsed",
@@ -170,6 +310,7 @@ def default_prior_ledger_candidates(repo_root: Path) -> list[Path]:
     """Locations checked before any paid run. Absence is unverifiable, not zero."""
     root = Path(repo_root)
     return [
+        root / "runs" / "feedback_eval" / "prior_balance.json",
         root / "runs" / "feedback_eval" / "ledger.json",
         root / "runs" / "feedback_eval" / "budget.json",
         root / "docs" / "budget_ledger.json",
@@ -219,7 +360,14 @@ class RunStore:
         self.lock_path = self.root / "ledger.lock"
         self._thread_lock = threading.Lock()
 
-    def initialize(self, config: dict[str, Any], prior: dict[str, Any]) -> None:
+    def initialize(
+        self,
+        config: dict[str, Any],
+        prior: dict[str, Any],
+        *,
+        unit_prices_by_model: dict[str, Any] | None = None,
+        this_run_currency: str | None = None,
+    ) -> None:
         """Create or resume a run directory. Config drift and broken ledgers fail."""
         self.root.mkdir(parents=True, exist_ok=True)
         self.records_dir.mkdir(parents=True, exist_ok=True)
@@ -247,6 +395,19 @@ class RunStore:
             raise StoreError(
                 "refusing to treat an unverified prior ledger as a known spend or balance"
             )
+        metered_prices = bool(unit_prices_by_model) and all(
+            (price or {}).get("source") == "verified"
+            and (price or {}).get("input_per_million") is not None
+            and (price or {}).get("output_per_million") is not None
+            for price in (unit_prices_by_model or {}).values()
+        )
+        # This-run spend starts at 0 only when every model tariff is verified.
+        # Historical prior_spent stays None unless the wallet snapshot had it.
+        spent_this_run = (
+            {"amount": 0.0, "currency": this_run_currency, "status": "metered"}
+            if metered_prices
+            else {"amount": None, "currency": None, "status": "unknown"}
+        )
         ledger = {
             "schema_version": STORE_SCHEMA_VERSION,
             "config_fingerprint": fingerprint,
@@ -255,7 +416,8 @@ class RunStore:
             "prior_spent": prior.get("spent"),
             "prior_balance": prior.get("balance"),
             "unit_prices": prior.get("unit_prices"),
-            "spent_this_run": {"amount": None, "currency": None, "status": "unknown"},
+            "unit_prices_by_model": unit_prices_by_model or {},
+            "spent_this_run": spent_this_run,
             "pending_unverified": 0,
             "calls": {name: 0 for name in _CALL_COUNTERS},
             "incomplete": False,
@@ -311,7 +473,7 @@ class RunStore:
             freeze.get("freeze_sha256"),
             freeze.get("ready_for_official_run"),
         )
-        self.initialize(config, prior)
+        self.initialize(config, prior, **_price_kwargs_from_freeze(freeze))
 
     def load_ledger(self) -> dict[str, Any]:
         """Read the ledger JSON. Callers must not invent missing amounts."""
@@ -372,8 +534,11 @@ class RunStore:
                 logger.info("Idempotent resume for key=%s", key)
                 return
             incoming["accounting_status"] = classify_generation(incoming["generation"])
-            incoming["cost"] = incoming.get(
-                "cost", {"amount": None, "currency": None, "status": "unknown"}
+            ledger_for_prices = self.load_ledger()
+            model_id = (incoming.get("settings") or {}).get("model")
+            incoming["cost"] = compute_generation_cost(
+                (incoming.get("generation") or {}).get("usage"),
+                (ledger_for_prices.get("unit_prices_by_model") or {}).get(model_id),
             )
             incoming["config_fingerprint"] = json.loads(
                 self.config_path.read_text(encoding="utf-8")
@@ -394,8 +559,17 @@ class RunStore:
         ledger["calls"][status] += 1
         if status == "timeout":
             ledger["pending_unverified"] = int(ledger.get("pending_unverified", 0)) + 1
-        ledger["spent_this_run"]["status"] = "unknown"
-        ledger["spent_this_run"]["amount"] = None
+        cost = record.get("cost") or {}
+        if cost.get("status") == "metered" and cost.get("amount") is not None:
+            current = ledger["spent_this_run"].get("amount")
+            if current is None:
+                current = 0.0
+            ledger["spent_this_run"]["amount"] = float(current) + float(cost["amount"])
+            ledger["spent_this_run"]["currency"] = cost.get("currency")
+        if int(ledger.get("pending_unverified") or 0) > 0 or cost.get("status") != "metered":
+            ledger["spent_this_run"]["status"] = "unknown"
+        else:
+            ledger["spent_this_run"]["status"] = "metered"
         _atomic_write_json(self.ledger_path, ledger)
 
     def _reject_if_incomplete(self) -> None:
@@ -411,119 +585,6 @@ class RunStore:
         missing = _REQUIRED_LEDGER_KEYS - set(ledger)
         if missing or ledger.get("incomplete"):
             raise IncompleteLedgerError(f"incomplete ledger, missing={sorted(missing)}")
-
-
-def _parse_yaml_scalar(text: str) -> Any:
-    """Parse a restricted YAML scalar. Quoted text is never treated as a type."""
-    if text in {"", "null", "~", "Null", "NULL"}:
-        return None
-    if text in {"true", "True", "TRUE"}:
-        return True
-    if text in {"false", "False", "FALSE"}:
-        return False
-    if len(text) >= 2 and text[0] == text[-1] and text[0] in {"'", '"'}:
-        return text[1:-1]
-    if re.fullmatch(r"-?\d+", text):
-        return int(text)
-    if re.fullmatch(r"-?\d+\.\d+", text):
-        return float(text)
-    return text
-
-
-def _parse_yaml_value(
-    lines: list[tuple[int, str]], index: int, indent: int
-) -> tuple[Any, int]:
-    """Parse a mapping or sequence starting at `index` with the given indent."""
-    if index >= len(lines):
-        return None, index
-    if lines[index][1].startswith("- "):
-        return _parse_yaml_seq(lines, index, indent)
-    return _parse_yaml_map(lines, index, indent)
-
-
-def _parse_yaml_map(
-    lines: list[tuple[int, str]], index: int, indent: int
-) -> tuple[dict[str, Any], int]:
-    result: dict[str, Any] = {}
-    while index < len(lines):
-        current_indent, content = lines[index]
-        if current_indent < indent:
-            break
-        if current_indent > indent:
-            raise ValueError(f"unexpected yaml indent at {content!r}")
-        if content.startswith("- "):
-            break
-        if ":" not in content:
-            raise ValueError(f"expected yaml key: {content!r}")
-        key, _, rest = content.partition(":")
-        key = key.strip()
-        rest = rest.strip()
-        index += 1
-        if rest:
-            result[key] = _parse_yaml_scalar(rest)
-            continue
-        if index >= len(lines) or lines[index][0] <= indent:
-            result[key] = None
-            continue
-        child, index = _parse_yaml_value(lines, index, lines[index][0])
-        result[key] = child
-    return result, index
-
-
-def _parse_yaml_seq(
-    lines: list[tuple[int, str]], index: int, indent: int
-) -> tuple[list[Any], int]:
-    result: list[Any] = []
-    while index < len(lines):
-        current_indent, content = lines[index]
-        if current_indent < indent:
-            break
-        if current_indent > indent or not content.startswith("- "):
-            break
-        rest = content[2:].strip()
-        index += 1
-        if not rest:
-            if index >= len(lines) or lines[index][0] <= indent:
-                result.append(None)
-                continue
-            child, index = _parse_yaml_value(lines, index, lines[index][0])
-            result.append(child)
-            continue
-        if ":" in rest and rest[0] not in {"'", '"'}:
-            key, _, value = rest.partition(":")
-            item = {key.strip(): _parse_yaml_scalar(value.strip())}
-            if index < len(lines) and lines[index][0] > indent:
-                nested, index = _parse_yaml_map(lines, index, lines[index][0])
-                item.update(nested)
-            result.append(item)
-            continue
-        result.append(_parse_yaml_scalar(rest))
-    return result, index
-
-
-def load_mapping_yaml(path: Path) -> dict[str, Any]:
-    """Load a restricted YAML mapping used by development.yaml.
-
-    Supports nested maps, lists of maps, scalars, and whole-line comments.
-    This is not a general YAML 1.2 implementation; keep the config in that
-    subset so the experiment does not add a PyYAML dependency.
-    """
-    path = Path(path)
-    logger.info("Loading YAML mapping from %s", path)
-    lines: list[tuple[int, str]] = []
-    for raw in path.read_text(encoding="utf-8").splitlines():
-        if not raw.strip() or raw.lstrip().startswith("#"):
-            continue
-        indent = len(raw) - len(raw.lstrip(" "))
-        lines.append((indent, raw.strip()))
-    if not lines:
-        raise ValueError(f"empty yaml mapping: {path}")
-    value, index = _parse_yaml_value(lines, 0, lines[0][0])
-    if index != len(lines):
-        raise ValueError(f"trailing yaml content in {path}: {lines[index][1]!r}")
-    if not isinstance(value, dict):
-        raise ValueError(f"yaml root must be a mapping: {path}")
-    return value
 
 
 def select_review_ids(test_ids: list[str], n: int, seed: int) -> list[str]:
@@ -628,12 +689,37 @@ def decide_paid_trial(
     env: dict[str, str],
     prior: dict[str, Any],
     cost_cap: dict[str, Any],
+    *,
+    development: bool = False,
+    call_limit: int | None = None,
 ) -> dict[str, Any]:
-    """Gate paid API calls. Missing auth, key, balance, or cap each stop the run."""
+    """Gate paid API calls. Missing auth, key, balance, or cap each stop the run.
+
+    A user-authorized *development* trial may proceed with an unverified
+    historical balance only when a positive `call_limit` is set. That limit is
+    not a dollar balance and does not treat prior spend as zero.
+    """
     if str(env.get("FEEDBACK_EVAL_AUTHORIZE_SPEND") or "") != "1":
         reason = "authorization_missing"
     elif not (env.get("API_KEY") or env.get("FEEDBACK_EVAL_API_KEY")):
         reason = "api_key_missing"
+    elif development and int(call_limit or 0) > 0:
+        logger.warning(
+            "Development trial allowed with unverified balance under call_limit=%s",
+            call_limit,
+        )
+        return {
+            "allowed": True,
+            "reason": None,
+            "balance_status": prior.get("status"),
+            "prior_spent": prior.get("spent"),
+            "prior_balance": prior.get("balance"),
+            "call_limit": int(call_limit),
+            "note": (
+                "Historical balance unverified; development stop is call_limit. "
+                "Do not treat prior spend as zero."
+            ),
+        }
     elif prior.get("balance") is None:
         reason = "balance_unverified"
     elif cost_cap.get("amount") is None or cost_cap.get("status") != "confirmed":
@@ -669,6 +755,44 @@ def _unit_price_is_verified(price: dict[str, Any] | None) -> bool:
         and price.get("input_per_million") is not None
         and price.get("output_per_million") is not None
     )
+
+
+def conservative_unit_prices(models: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Max verified input/output across models. Mixed currencies are rejected."""
+    prices = [model.get("unit_price") or {} for model in models]
+    if not prices or not all(_unit_price_is_verified(price) for price in prices):
+        return None
+    currencies = {price.get("currency") for price in prices}
+    if len(currencies) != 1:
+        logger.warning("Refusing a price envelope over mixed currencies %s", currencies)
+        return None
+    envelope = {
+        "input_per_million": max(float(price["input_per_million"]) for price in prices),
+        "output_per_million": max(float(price["output_per_million"]) for price in prices),
+        "currency": next(iter(currencies)),
+        "source": "verified",
+        "note": "Envelope is the max verified input/output across models.",
+    }
+    logger.info(
+        "Conservative unit prices input=%s output=%s %s",
+        envelope["input_per_million"],
+        envelope["output_per_million"],
+        envelope["currency"],
+    )
+    return envelope
+
+
+def _price_kwargs_from_freeze(freeze: dict[str, Any]) -> dict[str, Any]:
+    """Copy per-model tariffs from a freeze into RunStore initialize kwargs."""
+    by_model: dict[str, Any] = {}
+    for model in freeze.get("models") or []:
+        model_id = model.get("id")
+        if model_id:
+            by_model[str(model_id)] = model.get("unit_price")
+    return {
+        "unit_prices_by_model": by_model or None,
+        "this_run_currency": (freeze.get("cost_cap") or {}).get("currency"),
+    }
 
 
 def _ready_for_official_run(config: dict[str, Any], source_hashes: dict[str, Any]) -> bool:

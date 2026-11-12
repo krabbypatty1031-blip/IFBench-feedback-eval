@@ -1,0 +1,78 @@
+# Official freeze inputs. No secrets.
+# Peak cache-miss CNY tariff from
+# https://api-docs.deepseek.com/zh-cn/quick_start/pricing (retrieved 2026-11-12).
+# Wallet is CNY; USD balance is 0 and must not be used as the cap currency.
+protocol: feedback-eval-official-v1
+code_version: store-v1
+paths:
+  data: data/IFBench_test.jsonl
+  split: configs/feedback_eval/split.json
+  prompts: configs/feedback_eval/prompts.json
+  homology: configs/feedback_eval/homology.json
+  constraint_support: configs/feedback_eval/constraint_support.json
+parameters:
+  temperature: 0.0
+  max_tokens: 4096
+  seed: 42
+  thinking:
+    type: disabled
+retry:
+  rate_limit_retries: 1
+  timeout_retries: 0
+  timeout_s: 300.0
+  missing_data_rule: report_missing_do_not_impute
+scoring:
+  primary_metric: strict_prompt_level
+  official_strict: evaluation_lib.test_instruction_following_strict
+  official_loose: evaluation_lib.test_instruction_following_loose
+  loose_is_not_human_judgment: true
+feedback:
+  b2: overall_strict_status
+  b3: per_constraint_strict_plus_prompt_text
+  verifier_error: skip_revision_record_feedback_unavailable
+  mapping_error: skip_revision_record_feedback_unavailable
+human_review:
+  n_items: 40
+  seed: 42
+  split: test
+  blinding: hide_model_and_condition
+cost_cap:
+  amount: 40.0
+  currency: CNY
+  status: confirmed
+  note: Live wallet was 54.24 CNY; cap leaves headroom and is this-run only.
+budget_planning:
+  n_test_items: 260
+  n_models: 2
+  n_conditions: 4
+  planned_outputs: 2080
+  retry_uplift: 0.1
+  repeatability_outputs: 0
+trial:
+  n_dev_items: 4
+  paid_n_dev_items: 1
+  split: test
+  call_limit: 0
+  require_authorization: true
+  authorization_env: FEEDBACK_EVAL_AUTHORIZE_SPEND
+models:
+  - slot: model_a
+    id: deepseek-flash
+    api_base: https://api.deepseek.com/v1
+    availability: verified
+    unit_price:
+      input_per_million: 2.0
+      output_per_million: 8.0
+      currency: CNY
+      source: verified
+      tariff: peak_cache_miss
+  - slot: model_b
+    id: deepseek-v4-pro
+    api_base: https://api.deepseek.com/v1
+    availability: verified
+    unit_price:
+      input_per_million: 9.0
+      output_per_million: 27.0
+      currency: CNY
+      source: verified
+      tariff: peak_cache_miss

@@ -1,7 +1,9 @@
-# Environment
+# Local environment and secrets. Do not commit.
 .env
 .venv/
 .nltk_data/
+.pytest_cache/
+.coverage.*
 
 # Python
 __pycache__/
@@ -10,11 +12,14 @@ __pycache__/
 dist/
 build/
 
-# Eval outputs (optional - uncomment to track results)
+# Upstream already tracks .coverage, eval/, and some __pycache__.
+# This cleanup does not git-rm those files.
 # eval/
 
 # Response files with secrets in name
 data/*responses*.jsonl
 
 # Feedback-eval run artifacts (raw records and ledgers; do not commit secrets or receipts)
+# New runs: runs/feedback_eval/dev/ and runs/feedback_eval/official/
+# Historical trial dirs stay here too and remain gitignored.
 runs/feedback_eval/

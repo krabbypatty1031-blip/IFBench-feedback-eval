@@ -16,6 +16,7 @@ from feedback_eval.client import (
     FakeClient,
     OpenAICompatClient,
     classify_generation,
+    completion_payload,
     sanitize_settings,
 )
 from feedback_eval.store import (
@@ -24,9 +25,12 @@ from feedback_eval.store import (
     ResumeConflictError,
     RunStore,
     StoreError,
+    compute_generation_cost,
     config_fingerprint,
     inspect_prior_ledger,
     record_key,
+    wallet_from_provider_payload,
+    write_prior_balance_file,
 )
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -132,6 +136,23 @@ def test_sanitize_settings_drops_secrets() -> None:
     assert cleaned["model"] == "mock-model"
 
 
+def test_completion_payload_can_disable_thinking() -> None:
+    payload = completion_payload(
+        [{"role": "user", "content": "hi"}],
+        {
+            "model": "deepseek-flash",
+            "temperature": 0.0,
+            "max_tokens": 8,
+            "thinking": {"type": "disabled"},
+            "api_key": "secret-key",
+        },
+        "deepseek-flash",
+    )
+    assert payload["thinking"] == {"type": "disabled"}
+    assert "api_key" not in payload
+    assert "secret-key" not in json.dumps(payload)
+
+
 def test_openai_client_reads_api_key_from_env_only(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("API_KEY", "secret-key")
     client = OpenAICompatClient(api_base="http://127.0.0.1:9/v1", model="mock-model")
@@ -180,6 +201,50 @@ def test_incomplete_ledger_rejects_resume(tmp_path: Path) -> None:
     store.ledger_path.write_text("{}\n", encoding="utf-8")
     with pytest.raises(IncompleteLedgerError):
         RunStore(tmp_path).initialize(_config(), inspect_prior_ledger([]))
+
+
+def test_compute_generation_cost_meters_verified_usage() -> None:
+    unknown = compute_generation_cost(
+        {"prompt_tokens": 10, "completion_tokens": 20},
+        {"source": "unverified", "input_per_million": 2.0, "output_per_million": 8.0},
+    )
+    assert unknown["amount"] is None
+    metered = compute_generation_cost(
+        {"prompt_tokens": 1_000_000, "completion_tokens": 1_000_000},
+        {
+            "source": "verified",
+            "input_per_million": 2.0,
+            "output_per_million": 8.0,
+            "currency": "CNY",
+        },
+    )
+    assert metered["status"] == "metered"
+    assert metered["amount"] == 10.0
+    assert metered["currency"] == "CNY"
+
+
+def test_wallet_payload_prefers_positive_cny_over_zero_usd() -> None:
+    wallet = wallet_from_provider_payload(
+        {
+            "is_available": True,
+            "balance_infos": [
+                {"currency": "CNY", "total_balance": "54.24"},
+                {"currency": "USD", "total_balance": "0.00"},
+            ],
+        }
+    )
+    assert wallet["currency"] == "CNY"
+    assert wallet["balance"] == 54.24
+
+
+def test_verified_prior_ledger_file_is_parsed(tmp_path: Path) -> None:
+    path = tmp_path / "prior_balance.json"
+    write_prior_balance_file(path, {"currency": "CNY", "balance": 54.24, "is_available": True})
+    prior = inspect_prior_ledger([path])
+    assert prior["status"] == "ok"
+    assert prior["balance"] == 54.24
+    assert prior["spent"] is None
+    assert prior["currency"] == "CNY"
 
 
 def test_missing_prior_ledger_is_unverified_not_zero() -> None:

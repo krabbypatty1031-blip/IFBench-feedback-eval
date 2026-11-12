@@ -14,7 +14,8 @@ from pathlib import Path
 
 import pytest
 
-from feedback_eval.cli import main
+from feedback_eval.cli import apply_env_models, load_dotenv_file, main
+from feedback_eval.client import OpenAICompatClient
 from feedback_eval.store import (
     FreezeConflictError,
     FreezeMissingError,
@@ -169,6 +170,24 @@ def _fingerprint_config() -> dict:
     }
 
 
+def test_yaml_scalar_sequence_advances_index(tmp_path: Path) -> None:
+    """Dash-plus-text items must consume the line; otherwise parsing hangs."""
+    path = tmp_path / "seq.yaml"
+    path.write_text(
+        "items:\n"
+        "  - alpha\n"
+        "  - bravo\n"
+        "  - 'quoted: colon'\n"
+        "nested:\n"
+        "  - slot: model_a\n"
+        "    id: null\n",
+        encoding="utf-8",
+    )
+    raw = load_mapping_yaml(path)
+    assert raw["items"] == ["alpha", "bravo", "quoted: colon"]
+    assert raw["nested"] == [{"slot": "model_a", "id": None}]
+
+
 def test_development_yaml_declares_two_unverified_candidates() -> None:
     raw = load_mapping_yaml(_DEV_YAML)
     assert raw["budget_planning"]["planned_outputs"] == 2080
@@ -183,6 +202,25 @@ def test_development_yaml_declares_two_unverified_candidates() -> None:
         assert model["unit_price"]["input_per_million"] is None
     assert raw["cost_cap"]["amount"] is None
     assert raw["cost_cap"]["status"] == "unverified"
+    assert raw["parameters"]["thinking"] == {"type": "disabled"}
+
+
+def test_official_yaml_declares_verified_cny_tariff() -> None:
+    raw = load_mapping_yaml(_REPO_ROOT / "configs" / "feedback_eval" / "official.yaml")
+    assert raw["protocol"] == "feedback-eval-official-v1"
+    assert raw["budget_planning"]["planned_outputs"] == 2080
+    assert raw["cost_cap"]["currency"] == "CNY"
+    assert raw["cost_cap"]["status"] == "confirmed"
+    assert raw["cost_cap"]["amount"] == 40.0
+    assert raw["parameters"]["thinking"] == {"type": "disabled"}
+    ids = {model["id"] for model in raw["models"]}
+    assert ids == {"deepseek-flash", "deepseek-v4-pro"}
+    for model in raw["models"]:
+        assert model["availability"] == "verified"
+        assert model["unit_price"]["source"] == "verified"
+        assert model["unit_price"]["currency"] == "CNY"
+        assert model["unit_price"]["input_per_million"] is not None
+        assert model["unit_price"]["output_per_million"] is not None
 
 
 def test_build_freeze_pins_hashes_and_is_stable() -> None:
@@ -407,6 +445,21 @@ def test_paid_trial_blocked_without_authorization_key_or_balance() -> None:
     )
     assert still_blocked["allowed"] is False
     assert still_blocked["reason"] == "cost_cap_unverified"
+    # Chat-authorized development trial may run under a call cap without
+    # inventing a historical balance.
+    allowed_dev = decide_paid_trial(
+        {
+            "FEEDBACK_EVAL_AUTHORIZE_SPEND": "1",
+            "API_KEY": "secret-key",
+        },
+        prior,
+        cap,
+        development=True,
+        call_limit=16,
+    )
+    assert allowed_dev["allowed"] is True
+    assert allowed_dev["prior_spent"] is None
+    assert allowed_dev["call_limit"] == 16
 
 
 def test_paid_trial_cli_stops_without_network(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -447,6 +500,61 @@ def test_freeze_cli_writes_record(tmp_path: Path, capsys: pytest.CaptureFixture[
     assert len(freeze["human_review"]["item_ids"]) == 40
     # Resume with the same sources must succeed.
     assert main(["freeze", "--store-dir", str(tmp_path)]) == 0
+
+
+def test_dotenv_loads_missing_keys_without_exposing_values(tmp_path: Path) -> None:
+    path = tmp_path / ".env"
+    path.write_text("API_KEY=secret-key\nAPI_BASE=http://127.0.0.1:9/v1\n", encoding="utf-8")
+    env: dict[str, str] = {}
+    loaded = load_dotenv_file(path, env)
+    assert loaded == ["API_KEY", "API_BASE"]
+    assert env["API_KEY"] == "secret-key"
+    overlay = apply_env_models(
+        load_mapping_yaml(_DEV_YAML),
+        {"API_BASE": "http://127.0.0.1:9/v1", "MODEL_A": "cand-a", "MODEL_B": "cand-b"},
+    )
+    blob = json.dumps(overlay)
+    assert "secret-key" not in blob
+    assert overlay["models"][0]["id"] == "cand-a"
+    assert overlay["models"][1]["id"] == "cand-b"
+
+
+def test_paid_trial_cli_uses_live_client_when_authorized(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setenv("FEEDBACK_EVAL_AUTHORIZE_SPEND", "1")
+    monkeypatch.setenv("API_KEY", "secret-key")
+    monkeypatch.setenv("API_BASE", "http://127.0.0.1:9/v1")
+    monkeypatch.setenv("MODEL_A", "cand-a")
+    monkeypatch.setenv("MODEL_B", "cand-b")
+    monkeypatch.setenv("FEEDBACK_EVAL_DEV_CALL_LIMIT", "16")
+
+    def fake_generate(self: OpenAICompatClient, messages: list[dict], settings: dict) -> dict:
+        assert "secret-key" not in json.dumps(messages)
+        assert settings.get("thinking") == {"type": "disabled"}
+        return {
+            "text": "ping and but so",
+            "usage": {"prompt_tokens": 4, "completion_tokens": 3, "total_tokens": 7},
+            "finish_reason": "stop",
+            "latency_ms": 2.0,
+            "error": None,
+        }
+
+    monkeypatch.setattr(OpenAICompatClient, "generate", fake_generate)
+    code = main(
+        ["trial-dev", "--paid", "--n-items", "1", "--store-dir", str(tmp_path)]
+    )
+    captured = capsys.readouterr().out
+    assert code == 0
+    assert "secret-key" not in captured
+    summary = json.loads((tmp_path / "trial_summary.json").read_text(encoding="utf-8"))
+    assert summary["client"] == "OpenAICompatClient"
+    assert summary["paid"] is True
+    assert summary["actual_calls"] >= 2
+    dumped = "".join(path.read_text(encoding="utf-8") for path in tmp_path.rglob("*.json"))
+    assert "secret-key" not in dumped
 
 
 def test_offline_trial_cli_uses_fake_client(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

@@ -1,6 +1,34 @@
-# feedback_eval 运行记录
+# feedback_eval 运行手册
 
-所有命令在 `IFBench/` 仓库根目录执行。密钥不写入本文件。
+本文件是日常操作入口（命令、NLTK、产物目录、禁止改动的官方路径）。研究定义与评分口径见 [实验协议](EXPERIMENT_PROTOCOL.md)；阶段验收见 [执行计划](EXPERIMENT_EXECUTION_PLAN.md)；任务拆分见 [实施计划](superpowers/plans/2026-11-12-ifbench-feedback.md)；目录职责见 [结构设计](ARCHITECTURE_PLAN.md)。课程说明 PDF 在 Git 仓库外：`../../Group Project Description.pdf`。
+
+下方 Task 1–6 主要保留历史开发和验收记录，命令和结果应结合对应时间的代码与配置理解；真实开发题输出不作为正式测试结果。当前正式实验是否可运行，以冻结记录、现有运行入口和实际检查为准。
+
+## 目录职责
+
+官方部分（实验中只读，不要移动）：`ifbench/`、根目录 `evaluation_lib.py`、`run_eval.py`、`generate_responses.py`、根目录 `config.py`、`data/`、`eval/`（上游示例）、`instructions_test.py`。
+
+本课程实验（可版本控制）：`feedback_eval/`、`configs/feedback_eval/`、`tests/feedback_eval/`，以及上述协议与手册。`feedback_eval/config.py` 提供配置解析，`feedback_eval/environment.py` 提供环境配置读取；原 `store.load_mapping_yaml` 及 CLI 的环境函数导入保持兼容。
+
+本地不入库：`.env`、`.venv/`、`runs/feedback_eval/`、NLTK 数据。不得为清理工作区删除已有试跑记录。移动或改写 `feedback_eval/*.py` 会改变冻结代码哈希；后续正式跑应使用新冻结和新运行目录，不得改旧 `freeze.json`。
+
+## 运行产物约定
+
+新跑统一使用：
+
+- 开发探测：`--store-dir runs/feedback_eval/dev`
+- 正式运行：`--store-dir runs/feedback_eval/official`
+
+历史目录**原路径保留**，含真实调用证据，不要搬进 `official/`，也不当作正式测试结果：
+
+| 目录 | 含义 |
+| --- | --- |
+| `runs/feedback_eval/dev_paid/` | 早期付费入口探测（曾因缺密钥停住） |
+| `runs/feedback_eval/dev_paid_deepseek/` | DeepSeek 1 题开发探测 |
+| `runs/feedback_eval/dev_two_items_20261112/` | 两题离线/配置试跑 |
+| `runs/feedback_eval/dev_two_items_http_20261112/` | 两题真实 HTTP 试跑 |
+
+所有命令在 `IFBench/` 仓库根目录执行。密钥不写入本文件。禁止改官方验证器、`evaluation_lib.py` 和 `data/IFBench_test.jsonl` 的字节。
 
 ```bash
 export NLTK_DATA="$PWD/ifbench/.nltk_data"
@@ -170,25 +198,26 @@ NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m feedback_eval.cli dry-ru
 
 冻结记录钉住数据、划分、提示、代码、评分口径、反馈规则、重试、人工审核抽样和成本上限。`ready_for_official_run` 仅在模型标识、单价来源和成本上限都已核验时为 true。当前两项均为未核验，正式运行入口保持关闭。
 
-密钥仍只从环境读取。付费试跑还需要 `FEEDBACK_EVAL_AUTHORIZE_SPEND=1`、可用 API key、可核实余额，以及 `cost_cap.status=confirmed`。缺任何一项都会停止并写入原因，不构造 HTTP 客户端。
+用户已在会话中授权开发试跑。开发路径在 `FEEDBACK_EVAL_AUTHORIZE_SPEND=1`、API key、以及正的 `call_limit`（默认 16）下才会构造 `OpenAICompatClient`。历史余额仍记为无法核实，不用 0 代替；美元成本上限未确认前 `ready_for_official_run` 保持 false。
+
+密钥只从 `IFBench/.env` 或环境变量读取，不写入记录。DeepSeek thinking 默认开启，开发参数固定 `thinking.type=disabled`，避免推理过程进入 IFBench 答案并产生额外输出 token。
 
 ```bash
 NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_eval/test_freeze.py -q
-# 19 passed
 ```
 
-本次环境核验（2026-11-12）：
+本次环境核验（2026-11-12，用户授权并填入 `.env` 之后）：
 
 | 项 | 值 |
 | --- | --- |
-| 候选槽位 | `model_a`、`model_b`（`id`/`api_base` 均为 null，`availability=unverified`） |
-| 单价 | `source=unverified`，金额为 null |
-| 账本 | `unverified_missing`，历史支出与余额不得当作 0 |
-| `API_KEY` / `FEEDBACK_EVAL_API_KEY` | 未设置 |
-| `FEEDBACK_EVAL_AUTHORIZE_SPEND` | 未设置 |
-| 成本上限 | `amount=null`，`status=unverified` |
-| 付费试跑 | `allowed=false`，`reason=authorization_missing` |
-| `ready_for_official_run` | `false` |
+| 候选槽位 | `model_a=deepseek-flash`，`model_b=deepseek-v4-pro`（yaml 中 id 仍为 null，运行时从环境填入） |
+| API | `https://api.deepseek.com/v1` |
+| 单价写入冻结 | `source=unverified`（官方价目有峰时/非峰时与 cache hit/miss，冻结字段只能记单一 input/output） |
+| 账本 | `unverified_missing`，不得当成 0 |
+| 用户授权 | 已授权开发试跑；`call_limit=16` |
+| `.env` | 已填写；密钥未写入任何 JSON |
+| 付费试跑 | `allowed=true`；`runs/feedback_eval/dev_paid_deepseek/` |
+| `ready_for_official_run` | `false`（单价未写入冻结、美元上限未确认、余额无法核实） |
 
 预算规划（不是实测费用）：
 
@@ -209,12 +238,56 @@ NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_ev
 # paid_trial_reason=authorization_missing
 .venv/bin/python -m feedback_eval.cli freeze --store-dir /tmp/ifbench-task6-freeze
 # 同源续跑成功
-.venv/bin/python -m feedback_eval.cli trial-dev --paid --store-dir /tmp/ifbench-task6-paid
-# exit 3；paid_trial_blocked reason=authorization_missing；未构造 OpenAICompatClient
+FEEDBACK_EVAL_AUTHORIZE_SPEND=1 .venv/bin/python -m feedback_eval.cli trial-dev --paid --n-items 1 --store-dir runs/feedback_eval/dev_paid
+# 缺密钥时 exit 3；paid_trial_blocked reason=api_key_missing
+.venv/bin/python -m feedback_eval.cli trial-dev --paid --n-items 1 --store-dir runs/feedback_eval/dev_paid_deepseek
+# planned_calls=10 actual_calls=10 client=OpenAICompatClient
+# probe_ok deepseek-flash / deepseek-v4-pro；thinking disabled
 .venv/bin/python -m feedback_eval.cli trial-dev --offline --n-items 4 --store-dir /tmp/ifbench-task6-offline
 # planned_calls=32 actual_calls=32 client=FakeClient
 ```
 
+授权后的 1 题开发探测（2026-11-12 14:35 HKT / 06:35 UTC，处于 DeepSeek 工作日峰时 06:00–10:00 UTC）：
+
+| 项 | 值 |
+| --- | --- |
+| 调用 | 2 次 ping + 1 题 × 2 模型 × 4 条件 = **10**；上限 16 |
+| 失败类型 | 全部 `success` / `finish_reason=stop`；无 timeout、429、空回答、缺 usage |
+| 开发题 | 官方测试集 `key=1`（dev split 第一题），约束 `count:keywords_multiple` |
+| `deepseek-flash` | B0–B3 均 strict/loose 通过；生成 1287 prompt / 1104 completion tokens |
+| `deepseek-v4-pro` | B0–B3 均 strict/loose 失败；生成 1849 prompt / 1452 completion tokens |
+| ping usage | 两模型各 11 prompt + 1 completion |
+| 账本费用 | `spent_this_run.status=unknown`（冻结单价仍为 null） |
+| 按官方价目的峰时估算 | flash 约 **$0.0015**，pro 约 **$0.0062**，合计约 **$0.0078**（含 cache hit；不是实测扣款） |
+| 冻结 `availability` | 仍为 `unverified`（`freeze.json` 在探测前写入，不能事后改哈希） |
+
+[DeepSeek 官方价目](https://api-docs.deepseek.com/quick_start/pricing)（2026-11-12 查阅，每百万 token，USD）：
+
+| 模型 | cache hit 峰时/非峰 | cache miss 峰时/非峰 | 输出 峰时/非峰 |
+| --- | --- | --- | --- |
+| `deepseek-flash` | $0.006 / $0.003 | $0.30 / $0.15 | $1.20 / $0.60 |
+| `deepseek-v4-pro` | $0.044 / $0.022 | $1.32 / $0.66 | $3.96 / $1.98 |
+
+pytest 在进程已加载授权环境时，`test_paid_trial_cli_stops_without_network` 曾误走付费路径（约 44s，可能再消耗约 10 次调用）。之后已用 `tests/feedback_eval/conftest.py` 隔离 `.env` 并拒绝测试套件打开 HTTP。该额外扣款同样无法从本地账本核实金额。
+
 篡改已写入的 `freeze.json`（例如改 `prompt_sha256`）后再 `freeze` 同一目录：`FreezeConflictError`，拒绝续跑。无 `freeze.json` 的非空目录也会拒绝接管。
 
-人工审核抽样已按测试集、`seed=42`、`n=40` 写入冻结记录，供 Task 8 使用；盲审本身尚未执行。授权预算与两个真实模型之前，不要开始 Task 7 正式付费运行。
+人工审核抽样已按测试集、`seed=42`、`n=40` 写入冻结记录，供 Task 8 使用；盲审本身尚未执行。
+
+## Task 7：正式运行与质量检查
+
+正式配置为 `configs/feedback_eval/official.yaml`：协议 `feedback-eval-official-v1`，模型 `deepseek-flash` / `deepseek-v4-pro`，thinking 关闭。钱包为 **CNY 54.24**（USD 余额 0，不用美元上限）。单价按中文价目**高峰缓存未命中**写入冻结：flash 2/8 元每百万 token，pro 9/27 元。本轮成本上限 **40 CNY**。按开发探测 token 粗算约 21 CNY（含 10% 重试），不是实测扣款。
+
+```bash
+NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_eval/test_execution.py tests/feedback_eval/test_budget_guard.py -q
+# 含 rehearsal / summarize / BudgetedClient / run-official CLI
+NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_eval -q
+# 95 passed
+.venv/bin/python -m feedback_eval.cli run-official --offline --n-items 2 --store-dir /tmp/ifbench-official-offline
+# expected=16 actual_calls=16 client=FakeClient
+.venv/bin/python -m feedback_eval.cli trial-dev --paid --n-items 1 --store-dir runs/feedback_eval/dev
+.venv/bin/python -m feedback_eval.cli run-official --paid --store-dir runs/feedback_eval/official
+# 260 × 2 × 4 = 2080；断点可续跑；勿在运行中改 feedback_eval/*.py
+```
+
+`ready_for_official_run` 在写入 `runs/feedback_eval/prior_balance.json`（`GET /user/balance`）且授权、密钥、确认上限都满足时为 true。历史支出仍为 null，不记成 0；本轮 `spent_this_run` 从 0 起按高峰未命中单价计量。超时会把 `pending_unverified` 记上并停止后续付费调用。

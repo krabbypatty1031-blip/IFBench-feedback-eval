@@ -1,6 +1,7 @@
 # Development trial and freeze inputs. No secrets.
-# Model ids, unit prices, and the cost cap stay null until a paid probe
-# is explicitly authorized and a ledger balance can be verified.
+# Model ids come from the process environment at trial time. Unit prices and
+# the cost cap stay unverified until a published tariff and dollar cap are
+# copied here; probe_ok does not flip ready_for_official_run.
 protocol: feedback-eval-dev-v1
 code_version: store-v1
 paths:
@@ -13,6 +14,8 @@ parameters:
   temperature: 0.0
   max_tokens: 4096
   seed: 42
+  thinking:
+    type: disabled
 retry:
   rate_limit_retries: 1
   timeout_retries: 0
@@ -46,7 +49,9 @@ budget_planning:
   repeatability_outputs: 0
 trial:
   n_dev_items: 4
+  paid_n_dev_items: 1
   split: dev
+  call_limit: 16
   require_authorization: true
   authorization_env: FEEDBACK_EVAL_AUTHORIZE_SPEND
 models:

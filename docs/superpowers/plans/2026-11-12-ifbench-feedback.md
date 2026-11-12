@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.11、IFBench 官方验证器、pytest、JSONL、OpenAI 兼容 API。
 
-**Spec:** `EXPERIMENT_PROTOCOL.md`；阶段和验收参考 `EXPERIMENT_EXECUTION_PLAN.md`。
+**Spec:** `docs/EXPERIMENT_PROTOCOL.md`；阶段和验收参考 `docs/EXPERIMENT_EXECUTION_PLAN.md`。
 
 ## Global Constraints
 
@@ -108,10 +108,10 @@
 
 **Files:** Modify `feedback_eval/cli.py`; Create `tests/feedback_eval/test_execution.py`；产生 `runs/feedback_eval/` 下的冻结记录和结果。
 
-- [ ] 用模拟客户端验证运行调度、预算耗尽时停止、进程中断与恢复、幂等写入和输入输出计数。
+- [x] 用模拟客户端验证运行调度、预算耗尽时停止、进程中断与恢复、幂等写入和输入输出计数。
 - [ ] 使用冻结配置运行正式测试；各模型、题目和条件单独记录状态，不依据中间表现改提示或筛题。
-- [ ] 汇总预期、成功、失败、截断、空回答、缺失和费用未知数量；将官方评分结果关联到实际回答并保留原始输出。
-- [ ] 运行 `.venv/bin/python -m pytest tests/feedback_eval/test_execution.py -q`；验收所有状态均可对账，任何未完成项明确保留。
+- [x] 汇总预期、成功、失败、截断、空回答、缺失和费用未知数量；将官方评分结果关联到实际回答并保留原始输出。
+- [x] 运行 `.venv/bin/python -m pytest tests/feedback_eval/test_execution.py -q`；验收所有状态均可对账，任何未完成项明确保留。
 
 ### Task 8: 分析与盲审
 

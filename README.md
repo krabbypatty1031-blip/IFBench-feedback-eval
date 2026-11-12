@@ -1,5 +1,14 @@
 # Generalizing Verifiable Instruction Following
 
+> **Feedback evaluation project:** For the course experiment built on this
+> upstream repository, see the [project guide](docs/feedback_eval.md),
+> [experiment protocol](docs/EXPERIMENT_PROTOCOL.md),
+> [execution plan](docs/EXPERIMENT_EXECUTION_PLAN.md), and
+> [architecture plan](docs/ARCHITECTURE_PLAN.md).
+> The course brief PDF is outside this Git tree (`../Group Project Description.pdf`).
+
+**Layout (official scoring paths are not moved):** official IFBench stays at `ifbench/`, `evaluation_lib.py`, `run_eval.py`, `generate_responses.py`, root `config.py`, `data/`, `eval/`, and `instructions_test.py`. The course experiment is `feedback_eval/`, `configs/feedback_eval/`, `tests/feedback_eval/`, and `docs/` (protocol, execution plan, run handbook). Local-only: `.env`, `.venv/`, `runs/feedback_eval/`, NLTK data.
+
 This repo contains IFBench, which is a new, challenging benchmark for precise instruction following.
 Read the <a href="https://arxiv.org/pdf/2507.02833">IFBench paper</a>, accepted to NeurIPS 2025, D&B.
 
