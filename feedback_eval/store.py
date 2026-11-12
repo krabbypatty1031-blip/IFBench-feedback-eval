@@ -12,6 +12,8 @@ import hashlib
 import json
 import logging
 import os
+import random
+import re
 import threading
 from contextlib import contextmanager
 from pathlib import Path
@@ -22,6 +24,34 @@ from feedback_eval.client import classify_generation, sanitize_settings
 logger = logging.getLogger(__name__)
 
 STORE_SCHEMA_VERSION = "store-v1"
+FREEZE_SCHEMA_VERSION = "freeze-v1"
+_OFFICIAL_DATA_SHA256 = "d2ada7da94a38cfe406351614c4e686846ed2da6d1b339db95fa5ead19554a4a"
+_SOURCE_HASH_KEYS = (
+    "data_sha256",
+    "split_sha256",
+    "prompt_sha256",
+    "code_sha256",
+    "homology_sha256",
+    "constraint_support_sha256",
+)
+_REQUIRED_FREEZE_KEYS = {
+    "schema_version",
+    "freeze_sha256",
+    "protocol",
+    "code_version",
+    "git_commit",
+    "models",
+    "parameters",
+    "scoring",
+    "feedback",
+    "retry",
+    "human_review",
+    "cost_cap",
+    "budget_estimate",
+    "paid_trial",
+    "ready_for_official_run",
+    *_SOURCE_HASH_KEYS,
+}
 _REQUIRED_LEDGER_KEYS = {
     "schema_version",
     "config_fingerprint",
@@ -59,6 +89,18 @@ class ConfigConflictError(StoreError):
 
 class IncompleteLedgerError(StoreError):
     """Ledger is missing, truncated, or marked incomplete."""
+
+
+class FreezeConflictError(StoreError):
+    """Stored freeze hash or content does not match the current freeze."""
+
+
+class FreezeMissingError(StoreError):
+    """A non-empty run directory has no freeze.json, so it cannot be claimed."""
+
+
+class IncompleteFreezeError(StoreError):
+    """Freeze record is missing required fields."""
 
 
 def record_key(
@@ -169,6 +211,7 @@ class RunStore:
         self.records_dir = self.root / "records"
         self.ledger_path = self.root / "ledger.json"
         self.config_path = self.root / "config.json"
+        self.freeze_path = self.root / "freeze.json"
         self.lock_path = self.root / "ledger.lock"
         self._thread_lock = threading.Lock()
 
@@ -218,6 +261,46 @@ class RunStore:
             prior.get("status"),
             fingerprint,
         )
+
+    def initialize_frozen(
+        self,
+        config: dict[str, Any],
+        prior: dict[str, Any],
+        freeze: dict[str, Any],
+    ) -> None:
+        """Create or resume a run directory that is pinned to a freeze record.
+
+        An empty directory receives freeze.json first. A matching freeze
+        resumes. Leftover files without freeze.json are not taken over.
+        """
+        self.root.mkdir(parents=True, exist_ok=True)
+        if self.freeze_path.exists():
+            existing = json.loads(self.freeze_path.read_text(encoding="utf-8"))
+            validate_resume(existing, freeze)
+            logger.info("Resuming frozen directory %s", self.root)
+            self.initialize(config, prior)
+            return
+        leftovers = [
+            path
+            for path in self.root.iterdir()
+            if path.name not in {".DS_Store", "ledger.lock"}
+        ]
+        if leftovers:
+            logger.error(
+                "Refusing to take over non-empty directory %s without freeze.json: %s",
+                self.root,
+                [path.name for path in leftovers],
+            )
+            raise FreezeMissingError(
+                f"non-empty run directory {self.root} has no freeze.json"
+            )
+        _atomic_write_json(self.freeze_path, freeze)
+        logger.info(
+            "Wrote freeze %s ready_for_official_run=%s",
+            freeze.get("freeze_sha256"),
+            freeze.get("ready_for_official_run"),
+        )
+        self.initialize(config, prior)
 
     def load_ledger(self) -> dict[str, Any]:
         """Read the ledger JSON. Callers must not invent missing amounts."""
@@ -317,3 +400,349 @@ class RunStore:
         missing = _REQUIRED_LEDGER_KEYS - set(ledger)
         if missing or ledger.get("incomplete"):
             raise IncompleteLedgerError(f"incomplete ledger, missing={sorted(missing)}")
+
+
+def _parse_yaml_scalar(text: str) -> Any:
+    """Parse a restricted YAML scalar. Quoted text is never treated as a type."""
+    if text in {"", "null", "~", "Null", "NULL"}:
+        return None
+    if text in {"true", "True", "TRUE"}:
+        return True
+    if text in {"false", "False", "FALSE"}:
+        return False
+    if len(text) >= 2 and text[0] == text[-1] and text[0] in {"'", '"'}:
+        return text[1:-1]
+    if re.fullmatch(r"-?\d+", text):
+        return int(text)
+    if re.fullmatch(r"-?\d+\.\d+", text):
+        return float(text)
+    return text
+
+
+def _parse_yaml_value(
+    lines: list[tuple[int, str]], index: int, indent: int
+) -> tuple[Any, int]:
+    """Parse a mapping or sequence starting at `index` with the given indent."""
+    if index >= len(lines):
+        return None, index
+    if lines[index][1].startswith("- "):
+        return _parse_yaml_seq(lines, index, indent)
+    return _parse_yaml_map(lines, index, indent)
+
+
+def _parse_yaml_map(
+    lines: list[tuple[int, str]], index: int, indent: int
+) -> tuple[dict[str, Any], int]:
+    result: dict[str, Any] = {}
+    while index < len(lines):
+        current_indent, content = lines[index]
+        if current_indent < indent:
+            break
+        if current_indent > indent:
+            raise ValueError(f"unexpected yaml indent at {content!r}")
+        if content.startswith("- "):
+            break
+        if ":" not in content:
+            raise ValueError(f"expected yaml key: {content!r}")
+        key, _, rest = content.partition(":")
+        key = key.strip()
+        rest = rest.strip()
+        index += 1
+        if rest:
+            result[key] = _parse_yaml_scalar(rest)
+            continue
+        if index >= len(lines) or lines[index][0] <= indent:
+            result[key] = None
+            continue
+        child, index = _parse_yaml_value(lines, index, lines[index][0])
+        result[key] = child
+    return result, index
+
+
+def _parse_yaml_seq(
+    lines: list[tuple[int, str]], index: int, indent: int
+) -> tuple[list[Any], int]:
+    result: list[Any] = []
+    while index < len(lines):
+        current_indent, content = lines[index]
+        if current_indent < indent:
+            break
+        if current_indent > indent or not content.startswith("- "):
+            break
+        rest = content[2:].strip()
+        index += 1
+        if not rest:
+            if index >= len(lines) or lines[index][0] <= indent:
+                result.append(None)
+                continue
+            child, index = _parse_yaml_value(lines, index, lines[index][0])
+            result.append(child)
+            continue
+        if ":" in rest and rest[0] not in {"'", '"'}:
+            key, _, value = rest.partition(":")
+            item = {key.strip(): _parse_yaml_scalar(value.strip())}
+            if index < len(lines) and lines[index][0] > indent:
+                nested, index = _parse_yaml_map(lines, index, lines[index][0])
+                item.update(nested)
+            result.append(item)
+            continue
+        result.append(_parse_yaml_scalar(rest))
+    return result, index
+
+
+def load_mapping_yaml(path: Path) -> dict[str, Any]:
+    """Load a restricted YAML mapping used by development.yaml.
+
+    Supports nested maps, lists of maps, scalars, and whole-line comments.
+    This is not a general YAML 1.2 implementation; keep the config in that
+    subset so the experiment does not add a PyYAML dependency.
+    """
+    path = Path(path)
+    logger.info("Loading YAML mapping from %s", path)
+    lines: list[tuple[int, str]] = []
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        if not raw.strip() or raw.lstrip().startswith("#"):
+            continue
+        indent = len(raw) - len(raw.lstrip(" "))
+        lines.append((indent, raw.strip()))
+    if not lines:
+        raise ValueError(f"empty yaml mapping: {path}")
+    value, index = _parse_yaml_value(lines, 0, lines[0][0])
+    if index != len(lines):
+        raise ValueError(f"trailing yaml content in {path}: {lines[index][1]!r}")
+    if not isinstance(value, dict):
+        raise ValueError(f"yaml root must be a mapping: {path}")
+    return value
+
+
+def select_review_ids(test_ids: list[str], n: int, seed: int) -> list[str]:
+    """Draw `n` test ids with a fixed seed. The draw order is part of the freeze."""
+    pool = [str(item_id) for item_id in test_ids]
+    if n > len(pool):
+        raise ValueError(f"cannot sample {n} review ids from {len(pool)} test ids")
+    rng = random.Random(seed)
+    rng.shuffle(pool)
+    selected = pool[:n]
+    logger.info("Selected %s human-review ids with seed=%s", n, seed)
+    return selected
+
+
+def estimate_budget(
+    planning: dict[str, Any],
+    prior: dict[str, Any],
+    observed_usage: dict[str, Any] | None = None,
+    unit_prices: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Plan official output count, retries, and cost with unverified amounts kept null.
+
+    260 × 2 × 4 = 2,080 is the official-output planning value. Retry uplift and
+    repeatability trials are added on top. A missing prior spend is not zero.
+    Dollar totals are computed only from prices whose source is `verified`.
+    """
+    n_test = int(planning["n_test_items"])
+    n_models = int(planning["n_models"])
+    n_conditions = int(planning["n_conditions"])
+    planned = n_test * n_models * n_conditions
+    declared = planning.get("planned_outputs")
+    if declared is not None and int(declared) != planned:
+        raise ValueError(
+            f"planned_outputs={declared} != {n_test}*{n_models}*{n_conditions}={planned}"
+        )
+    retry_uplift = float(planning.get("retry_uplift") or 0.0)
+    retry_outputs = int(round(planned * retry_uplift))
+    repeatability = int(planning.get("repeatability_outputs") or 0)
+    total = planned + retry_outputs + repeatability
+    prices = unit_prices if unit_prices is not None else prior.get("unit_prices")
+    stop_reason = None
+    if prior.get("balance") is None:
+        stop_reason = "balance_unverified"
+    elif not prices or prices.get("source") != "verified":
+        stop_reason = "prices_unverified"
+    amount = None
+    cost_status = "unknown"
+    currency = (prices or {}).get("currency") or "USD"
+    verified_prices = (
+        prices
+        and prices.get("source") == "verified"
+        and prices.get("input_per_million") is not None
+        and prices.get("output_per_million") is not None
+        and observed_usage
+        and observed_usage.get("n_outputs")
+    )
+    if verified_prices:
+        n_obs = int(observed_usage["n_outputs"])
+        mean_in = float(observed_usage.get("prompt_tokens") or 0) / n_obs
+        mean_out = float(observed_usage.get("completion_tokens") or 0) / n_obs
+        amount = (
+            mean_in * total * float(prices["input_per_million"])
+            + mean_out * total * float(prices["output_per_million"])
+        ) / 1_000_000.0
+        cost_status = "estimated_from_verified_prices"
+        logger.info(
+            "Budget estimate amount=%.6f %s from verified prices over %s outputs",
+            amount,
+            currency,
+            total,
+        )
+    else:
+        logger.warning(
+            "Budget estimate cannot price %s outputs; stop_reason=%s",
+            total,
+            stop_reason,
+        )
+    return {
+        "n_test_items": n_test,
+        "n_models": n_models,
+        "n_conditions": n_conditions,
+        "planned_outputs": planned,
+        "retry_uplift": retry_uplift,
+        "retry_outputs": retry_outputs,
+        "repeatability_outputs": repeatability,
+        "total_outputs": total,
+        "estimated_cost": {
+            "amount": amount,
+            "currency": currency,
+            "status": cost_status,
+        },
+        "incurred_spend": prior.get("spent"),
+        "incurred_status": prior.get("status"),
+        "stop_reason": stop_reason,
+        "observed_usage": observed_usage,
+        "unit_prices": prices,
+        "note": (
+            "2080 is the official-output plan, not a measured cost. "
+            "Unverified prior spend is not treated as zero."
+        ),
+    }
+
+
+def decide_paid_trial(
+    env: dict[str, str],
+    prior: dict[str, Any],
+    cost_cap: dict[str, Any],
+) -> dict[str, Any]:
+    """Gate paid API calls. Missing auth, key, balance, or cap each stop the run."""
+    if str(env.get("FEEDBACK_EVAL_AUTHORIZE_SPEND") or "") != "1":
+        reason = "authorization_missing"
+    elif not (env.get("API_KEY") or env.get("FEEDBACK_EVAL_API_KEY")):
+        reason = "api_key_missing"
+    elif prior.get("balance") is None:
+        reason = "balance_unverified"
+    elif cost_cap.get("amount") is None or cost_cap.get("status") != "confirmed":
+        reason = "cost_cap_unverified"
+    else:
+        logger.info("Paid trial gate allowed under confirmed cap=%s", cost_cap)
+        return {"allowed": True, "reason": None}
+    logger.warning("Paid trial blocked: %s", reason)
+    return {"allowed": False, "reason": reason}
+
+
+def _freeze_body(freeze: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in freeze.items() if key != "freeze_sha256"}
+
+
+def freeze_content_sha256(freeze: dict[str, Any]) -> str:
+    """Hash freeze content after dropping the self-hash field."""
+    return _canonical_sha256(_freeze_body(freeze))
+
+
+def _require_freeze_fields(freeze: dict[str, Any]) -> None:
+    missing = sorted(_REQUIRED_FREEZE_KEYS - set(freeze))
+    if missing:
+        raise IncompleteFreezeError(f"incomplete freeze, missing={missing}")
+
+
+def _ready_for_official_run(config: dict[str, Any], source_hashes: dict[str, Any]) -> bool:
+    """Official runs need verified models, prices, and a numeric cost cap."""
+    models = config.get("models") or []
+    models_ok = bool(models) and all(
+        model.get("id") and model.get("availability") == "verified" for model in models
+    )
+    prices_ok = all(
+        (model.get("unit_price") or {}).get("source") == "verified"
+        and (model.get("unit_price") or {}).get("input_per_million") is not None
+        for model in models
+    )
+    cap = config.get("cost_cap") or {}
+    paid = config.get("paid_trial") or {}
+    hashes_ok = all(source_hashes.get(key) for key in _SOURCE_HASH_KEYS)
+    return bool(
+        models_ok
+        and prices_ok
+        and hashes_ok
+        and cap.get("status") == "confirmed"
+        and cap.get("amount") is not None
+        and paid.get("allowed") is True
+    )
+
+
+def build_freeze(config: dict[str, Any], source_hashes: dict[str, Any]) -> dict[str, Any]:
+    """Assemble a freeze record and pin it with a canonical content hash.
+
+    Args:
+        config: Protocol, models, parameters, scoring, feedback, retry,
+            human-review draw, cost cap, budget estimate, and paid-trial gate.
+        source_hashes: SHA-256 pins for data, split, prompts, code, homology,
+            and constraint-support files.
+
+    Returns:
+        Freeze mapping including `freeze_sha256` over the remaining fields.
+    """
+    missing_hashes = [key for key in _SOURCE_HASH_KEYS if key not in source_hashes]
+    if missing_hashes:
+        raise IncompleteFreezeError(f"source hashes missing {missing_hashes}")
+    freeze = {
+        "schema_version": FREEZE_SCHEMA_VERSION,
+        "protocol": config["protocol"],
+        "code_version": config["code_version"],
+        "git_commit": config.get("git_commit"),
+        "data_sha256": source_hashes["data_sha256"],
+        "split_sha256": source_hashes["split_sha256"],
+        "prompt_sha256": source_hashes["prompt_sha256"],
+        "code_sha256": source_hashes["code_sha256"],
+        "homology_sha256": source_hashes["homology_sha256"],
+        "constraint_support_sha256": source_hashes["constraint_support_sha256"],
+        "models": config["models"],
+        "parameters": config["parameters"],
+        "scoring": config["scoring"],
+        "feedback": config["feedback"],
+        "retry": config["retry"],
+        "human_review": config["human_review"],
+        "cost_cap": config["cost_cap"],
+        "budget_estimate": config["budget_estimate"],
+        "paid_trial": config["paid_trial"],
+        "ready_for_official_run": _ready_for_official_run(config, source_hashes),
+    }
+    freeze["freeze_sha256"] = freeze_content_sha256(freeze)
+    logger.info(
+        "Built freeze sha256=%s ready_for_official_run=%s",
+        freeze["freeze_sha256"],
+        freeze["ready_for_official_run"],
+    )
+    return freeze
+
+
+def validate_resume(existing: dict[str, Any], current: dict[str, Any]) -> None:
+    """Refuse resume unless both freeze records hash-check then match.
+
+    Integrity is checked first so a rewritten `freeze_sha256` cannot hide a
+    field edit. Matching hashes then mean the pinned content is identical.
+    """
+    _require_freeze_fields(existing)
+    _require_freeze_fields(current)
+    existing_hash = freeze_content_sha256(existing)
+    current_hash = freeze_content_sha256(current)
+    if existing.get("freeze_sha256") != existing_hash:
+        logger.error("Existing freeze hash does not match its content")
+        raise FreezeConflictError("existing freeze hash does not match content")
+    if current.get("freeze_sha256") != current_hash:
+        logger.error("Current freeze hash does not match its content")
+        raise FreezeConflictError("current freeze hash does not match content")
+    if existing_hash != current_hash:
+        logger.error(
+            "Freeze mismatch existing=%s current=%s",
+            existing.get("freeze_sha256"),
+            current.get("freeze_sha256"),
+        )
+        raise FreezeConflictError("freeze content mismatch; refuse resume")
+    logger.info("Freeze resume validated sha256=%s", existing_hash)

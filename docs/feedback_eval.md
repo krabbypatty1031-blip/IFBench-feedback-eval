@@ -165,3 +165,56 @@ NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m feedback_eval.cli dry-ru
 ```
 
 `dry-run` 只使用 `FakeClient`，不构造 HTTP 客户端。
+
+## Task 6：开发试验与冻结
+
+冻结记录钉住数据、划分、提示、代码、评分口径、反馈规则、重试、人工审核抽样和成本上限。`ready_for_official_run` 仅在模型标识、单价来源和成本上限都已核验时为 true。当前两项均为未核验，正式运行入口保持关闭。
+
+密钥仍只从环境读取。付费试跑还需要 `FEEDBACK_EVAL_AUTHORIZE_SPEND=1`、可用 API key、可核实余额，以及 `cost_cap.status=confirmed`。缺任何一项都会停止并写入原因，不构造 HTTP 客户端。
+
+```bash
+NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_eval/test_freeze.py -q
+# 19 passed
+```
+
+本次环境核验（2026-11-12）：
+
+| 项 | 值 |
+| --- | --- |
+| 候选槽位 | `model_a`、`model_b`（`id`/`api_base` 均为 null，`availability=unverified`） |
+| 单价 | `source=unverified`，金额为 null |
+| 账本 | `unverified_missing`，历史支出与余额不得当作 0 |
+| `API_KEY` / `FEEDBACK_EVAL_API_KEY` | 未设置 |
+| `FEEDBACK_EVAL_AUTHORIZE_SPEND` | 未设置 |
+| 成本上限 | `amount=null`，`status=unverified` |
+| 付费试跑 | `allowed=false`，`reason=authorization_missing` |
+| `ready_for_official_run` | `false` |
+
+预算规划（不是实测费用）：
+
+| 项 | 值 |
+| --- | --- |
+| 正式输出 | 260 × 2 × 4 = **2080** |
+| 重试预留（规划 10%） | 208 |
+| 重复性试验 | 0 |
+| 合计规划调用 | 2288 |
+| 已发生费用 | null（`incurred_status=unverified_missing`） |
+| 估算金额 | null（`status=unknown`，`stop_reason=balance_unverified`） |
+
+```bash
+.venv/bin/python -m feedback_eval.cli estimate-budget
+.venv/bin/python -m feedback_eval.cli freeze --store-dir /tmp/ifbench-task6-freeze
+# ready_for_official_run=false
+# planned_outputs=2080
+# paid_trial_reason=authorization_missing
+.venv/bin/python -m feedback_eval.cli freeze --store-dir /tmp/ifbench-task6-freeze
+# 同源续跑成功
+.venv/bin/python -m feedback_eval.cli trial-dev --paid --store-dir /tmp/ifbench-task6-paid
+# exit 3；paid_trial_blocked reason=authorization_missing；未构造 OpenAICompatClient
+.venv/bin/python -m feedback_eval.cli trial-dev --offline --n-items 4 --store-dir /tmp/ifbench-task6-offline
+# planned_calls=32 actual_calls=32 client=FakeClient
+```
+
+篡改已写入的 `freeze.json`（例如改 `prompt_sha256`）后再 `freeze` 同一目录：`FreezeConflictError`，拒绝续跑。无 `freeze.json` 的非空目录也会拒绝接管。
+
+人工审核抽样已按测试集、`seed=42`、`n=40` 写入冻结记录，供 Task 8 使用；盲审本身尚未执行。授权预算与两个真实模型之前，不要开始 Task 7 正式付费运行。
