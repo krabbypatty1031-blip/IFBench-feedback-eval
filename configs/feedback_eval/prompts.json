@@ -1,0 +1,9 @@
+{
+  "version": "prompts-v1",
+  "language": "en",
+  "notes": "B0 is the raw IFBench user prompt with no extra wrapper. Revision branches share one instruction block; only the verifier increment differs. Do not add JSON, headings, or fences that the original user message did not ask for.",
+  "revision_shared": "Please review your previous answer against the original user message. Keep the original task and every output constraint from that message.",
+  "b1_increment": "Check the original output constraints yourself. Do not assume they were already satisfied.",
+  "allow_unchanged_if_passed": "The previous answer already passed the output constraints. You may leave the answer unchanged.",
+  "output_rule": "Return only the final answer. Do not describe the revision."
+}

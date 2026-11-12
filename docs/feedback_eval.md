@@ -150,3 +150,18 @@ NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_ev
 | `docs/budget_ledger.json` | 不存在 |
 
 `inspect_prior_ledger` 结果：`status=unverified_missing`，`spent=None`，`balance=None`，`unit_prices=None`。**不得把历史支出或余额当成 0。** 超时调用记入 `pending_unverified`，费用保持 unknown。开发和正式运行使用不同 `RunStore` 根目录。
+
+## Task 5：修订流程与离线集成
+
+B0 只调用一次，消息为原始 IFBench 题面、不加包装。B1/B2/B3 从同一 B0 独立分支，各一次修订；B0 通过也会修订。B2/B3 通过时提示允许保持原样。验证器异常时不编造反馈、不发起对应修订调用。提示模板见 `configs/feedback_eval/prompts.json`。开发集只做结构核对，不用测试集输出调参。
+
+```bash
+NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_eval/test_runner.py -q
+# 8 passed
+
+NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m feedback_eval.cli dry-run --n-items 4 --store-dir /tmp/ifbench-dry-run
+# 第一次 planned_calls=16 actual_calls=16
+# 第二次 planned_calls=16 actual_calls=0（续跑，不重复生成）
+```
+
+`dry-run` 只使用 `FakeClient`，不构造 HTTP 客户端。

@@ -227,6 +227,13 @@ class RunStore:
         digest = hashlib.sha256(key.encode("utf-8")).hexdigest()
         return self.records_dir / f"{digest}.json"
 
+    def get_record(self, key: str) -> dict[str, Any] | None:
+        """Return a stored record, or None if this identity has not been written."""
+        path = self.record_path(key)
+        if not path.exists():
+            return None
+        return json.loads(path.read_text(encoding="utf-8"))
+
     @contextmanager
     def budget_lock(self) -> Iterator[None]:
         """Process + thread lock so concurrent reservations cannot drop counts."""
