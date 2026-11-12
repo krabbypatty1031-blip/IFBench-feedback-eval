@@ -43,11 +43,11 @@
 
 **Interfaces:** `load_items(path: Path) -> list[dict]`; `audit_items(items: list[dict]) -> dict`；返回数量、重复 ID、重复提示、约束次数和类别。
 
-- [ ] 用 pytest 编写样本：重复 ID 必须报告，重复提示必须报告，单／双约束计数必须正确；文件缺失或 JSON 错误直接失败。
-- [ ] 运行 `NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_eval/test_dataset.py -q`，确认新测试在实现前失败。
-- [ ] 实现 JSONL 读取与审计；哈希直接对原始文件字节计算，禁止静默规范化提示文本。
-- [ ] 运行上述测试及 `NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest instructions_test.py -q`；预期官方 71 项、144 子测试通过；数据 300 行、300 不同 ID、58 类约束。
-- [ ] 用官方 `run_eval.py` 和 `data/sample_output.jsonl` 在 `/tmp/ifbench-baseline` 生成两种评分；记录文件名、输入输出和退出状态。验收后才进入下一任务。
+- [x] 用 pytest 编写样本：重复 ID 必须报告，重复提示必须报告，单／双约束计数必须正确；文件缺失或 JSON 错误直接失败。
+- [x] 运行 `NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_eval/test_dataset.py -q`，确认新测试在实现前失败。
+- [x] 实现 JSONL 读取与审计；哈希直接对原始文件字节计算，禁止静默规范化提示文本。
+- [x] 运行上述测试及 `NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest instructions_test.py -q`；预期官方 71 项、144 子测试通过；数据 300 行、300 不同 ID、58 类约束。
+- [x] 用官方 `run_eval.py` 和 `data/sample_output.jsonl` 在 `/tmp/ifbench-baseline` 生成两种评分；记录文件名、输入输出和退出状态。验收后才进入下一任务。
 
 ### Task 2: 划分与数据清单
 
