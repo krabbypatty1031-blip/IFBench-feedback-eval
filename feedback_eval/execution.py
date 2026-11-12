@@ -1,8 +1,8 @@
 """Scheduling, resume, and quality summaries.
 
 Live HTTP clients are never constructed here. The CLI injects FakeClient or a
-pre-authorized OpenAICompatClient. Missing records stay missing; they are not
-successes or zero-cost rows.
+pre-authorized OpenAICompatClient / AzureOpenAIClient. Missing records stay
+missing; they are not successes or zero-cost rows.
 """
 
 from __future__ import annotations

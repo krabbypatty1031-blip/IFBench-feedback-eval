@@ -162,7 +162,20 @@ NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_ev
 
 ## Task 4：调用与预算存储
 
-身份是 `(protocol, model, item_id, condition, repeat)`，不用 prompt 文本续跑。`FakeClient` 覆盖成功、超时、限流、截断、缺 usage、空回答；这些状态不是拒答，也不等于评分失败。密钥只从环境变量 `API_KEY` / `FEEDBACK_EVAL_API_KEY` 读取，不写入记录。配置指纹包含数据哈希、模型、提示哈希、代码版本和参数。
+身份是 `(protocol, model, item_id, condition, repeat)`，不用 prompt 文本续跑。`FakeClient` 覆盖成功、超时、限流、截断、缺 usage、空回答；这些状态不是拒答，也不等于评分失败。密钥只从环境变量 `API_KEY` / `FEEDBACK_EVAL_API_KEY` / `AZURE_OPENAI_API_KEY` 读取，不写入记录。配置指纹包含数据哈希、模型、提示哈希、代码版本和参数。
+
+HKBU GenAI 不是 OpenAI `/v1/chat/completions` + Bearer。客户端在 `API_PROVIDER=azure` 或 `api_base` 指向 `genai.hkbu.edu.hk` 时走 Azure 形状：`api-key` 请求头，`POST {api_base}/deployments/{模型}/chat/completions`。推荐本地 `.env`：
+
+```bash
+API_PROVIDER=azure
+API_BASE=https://genai.hkbu.edu.hk/general/rest
+API_KEY=your-hkbu-genai-key
+MODEL_A=gpt-4.1
+MODEL_B=gpt-4o
+# 可选：AZURE_OPENAI_API_VERSION=2024-02-01
+```
+
+HKBU 没有 DeepSeek 的 `GET /user/balance`。不得把缺失钱包写成 0；开发探测用 `trial-dev --paid`，正式 `--paid` 在没有核实余额前仍会挡住。DeepSeek 路径保持默认不变。
 
 ```bash
 NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_eval/test_client_store.py -q

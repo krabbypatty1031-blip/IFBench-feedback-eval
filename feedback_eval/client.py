@@ -1,8 +1,12 @@
 """Model clients for the feedback experiment.
 
-FakeClient is the Task 4 test surface. OpenAICompatClient reads the API key from
-the environment and never puts it on `repr()`. Empty text, truncation, timeouts,
+FakeClient is the Task 4 test surface. HTTP clients read the API key from the
+environment and never put it on `repr()`. Empty text, truncation, timeouts,
 and missing usage are accounting states, not refusals or score results.
+
+OpenAICompatClient talks to Bearer `/v1/chat/completions` hosts (DeepSeek).
+AzureOpenAIClient talks to Azure-style `/deployments/{id}/chat/completions`
+hosts (HKBU GenAI): `api-key` header, deployment in the path, no vendor wallet.
 """
 
 from __future__ import annotations
@@ -12,13 +16,18 @@ import logging
 import os
 import time
 from typing import Any
+from urllib.parse import quote, urlencode
 
 import httpx
 
 logger = logging.getLogger(__name__)
 
-_SECRET_KEYS = {"api_key", "authorization", "token", "secret", "password"}
+_SECRET_KEYS = {"api_key", "api-key", "authorization", "token", "secret", "password"}
 _GENERATION_FIELDS = ("text", "usage", "finish_reason", "latency_ms", "error")
+_AZURE_ALIASES = {"azure", "azure_openai", "hkbu", "hkbu_genai"}
+_OPENAI_ALIASES = {"openai", "openai_compat", "deepseek"}
+# HKBU GenAI rejects max_output_tokens below 16 (HTTP 400).
+_AZURE_MIN_MAX_TOKENS = 16
 
 
 def sanitize_settings(settings: dict[str, Any]) -> dict[str, Any]:
@@ -46,23 +55,59 @@ def _usage_unknown(usage: Any) -> bool:
     )
 
 
+def normalize_provider(provider: str | None, api_base: str | None = None) -> str:
+    """Map config/env aliases onto `openai` or `azure`.
+
+    HKBU GenAI is Azure-shaped (`api-key` + `/deployments/{id}/...`), so its
+    host selects azure even when `provider` is left blank.
+    """
+    raw = (provider or "").strip().lower().replace("-", "_")
+    if raw in _AZURE_ALIASES:
+        return "azure"
+    if raw in _OPENAI_ALIASES:
+        return "openai"
+    host = (api_base or "").lower()
+    if "genai.hkbu.edu.hk" in host:
+        return "azure"
+    return "openai"
+
+
+def provider_has_wallet(provider: str | None, api_base: str | None = None) -> bool:
+    """HKBU/Azure has no `/user/balance`; do not treat a missing wallet as 0."""
+    return normalize_provider(provider, api_base) == "openai"
+
+
 def completion_payload(
-    messages: list[dict], settings: dict, default_model: str
+    messages: list[dict],
+    settings: dict,
+    default_model: str,
+    provider: str | None = None,
+    api_base: str | None = None,
 ) -> dict[str, Any]:
     """Build a chat-completions body. Secrets never belong here.
 
     DeepSeek thinking is billed and can leak chain-of-thought into IFBench
     answers. Callers that need it off must pass `thinking: {type: disabled}`.
+    Azure deployments already identify the model in the URL, so `model` and
+    DeepSeek-only `thinking` stay out of that body.
     """
+    kind = normalize_provider(provider, api_base)
+    max_tokens = settings.get("max_tokens", 4096)
+    if kind == "azure":
+        try:
+            max_tokens = max(int(max_tokens), _AZURE_MIN_MAX_TOKENS)
+        except (TypeError, ValueError):
+            max_tokens = _AZURE_MIN_MAX_TOKENS
     payload: dict[str, Any] = {
-        "model": settings.get("model", default_model),
         "messages": messages,
         "temperature": settings.get("temperature", 0.0),
-        "max_tokens": settings.get("max_tokens", 4096),
+        "max_tokens": max_tokens,
     }
+    if kind != "azure":
+        payload["model"] = settings.get("model", default_model)
     if settings.get("seed") is not None:
         payload["seed"] = settings["seed"]
-    if settings.get("thinking") is not None:
+    if kind != "azure" and settings.get("thinking") is not None:
         payload["thinking"] = settings["thinking"]
     return payload
 
@@ -116,7 +161,7 @@ class FakeClient:
 
 
 class OpenAICompatClient:
-    """OpenAI-compatible HTTP client. Tests must not call generate()."""
+    """OpenAI-compatible HTTP client. Tests must not call live generate()."""
 
     def __init__(
         self,
@@ -125,37 +170,67 @@ class OpenAICompatClient:
         timeout_s: float = 300.0,
         max_retries: int = 1,
         api_key: str | None = None,
+        provider: str | None = None,
+        api_version: str | None = None,
     ):
         self.api_base = api_base.rstrip("/")
         self.model = model
         self.timeout_s = timeout_s
         self.max_retries = max_retries
+        self.provider = normalize_provider(provider, self.api_base)
+        self.api_version = api_version
         # Keep the secret off public attributes so accidental repr/log dumps omit it.
-        env_key = os.environ.get("API_KEY") or os.environ.get("FEEDBACK_EVAL_API_KEY")
+        env_key = (
+            os.environ.get("API_KEY")
+            or os.environ.get("FEEDBACK_EVAL_API_KEY")
+            or os.environ.get("AZURE_OPENAI_API_KEY")
+        )
         self._api_key = api_key if api_key is not None else env_key
 
     def __repr__(self) -> str:
         return (
-            f"OpenAICompatClient(api_base={self.api_base!r}, model={self.model!r}, "
-            f"timeout_s={self.timeout_s!r})"
+            f"{type(self).__name__}(api_base={self.api_base!r}, model={self.model!r}, "
+            f"provider={self.provider!r}, timeout_s={self.timeout_s!r})"
         )
+
+    def chat_completions_url(self) -> str:
+        """Return the POST URL. Azure puts the deployment name in the path."""
+        base = self.api_base.rstrip("/")
+        if self.provider == "azure":
+            deployment = quote(str(self.model), safe=".-")
+            url = f"{base}/deployments/{deployment}/chat/completions"
+            if self.api_version:
+                url = f"{url}?{urlencode({'api-version': self.api_version})}"
+            return url
+        return f"{base}/chat/completions"
 
     def headers(self) -> dict[str, str]:
         """Build HTTP headers. The caller must not write this dict into records."""
         headers = {"Content-Type": "application/json"}
-        if self._api_key:
+        if not self._api_key:
+            return headers
+        if self.provider == "azure":
+            headers["api-key"] = self._api_key
+        else:
             headers["Authorization"] = f"Bearer {self._api_key}"
         return headers
 
     def generate(self, messages: list[dict], settings: dict) -> dict:
-        """POST /chat/completions. Retries rate limits only, not timeouts."""
-        payload = completion_payload(messages, settings, self.model)
+        """POST chat completions. Retries rate limits only, not timeouts."""
+        payload = completion_payload(
+            messages,
+            settings,
+            self.model,
+            provider=self.provider,
+            api_base=self.api_base,
+        )
         started = time.perf_counter()
         attempts = self.max_retries + 1
         last_error: dict[str, Any] | None = None
         logger.info(
-            "HTTP generate model=%s messages=%s timeout_s=%s",
-            payload["model"],
+            "HTTP generate model=%s provider=%s messages=%s timeout_s=%s",
+            self.model,
+            self.provider,
             len(messages),
             self.timeout_s,
         )
@@ -163,7 +238,7 @@ class OpenAICompatClient:
             try:
                 with httpx.Client(timeout=self.timeout_s) as client:
                     response = client.post(
-                        f"{self.api_base}/chat/completions",
+                        self.chat_completions_url(),
                         headers=self.headers(),
                         json=payload,
                     )
@@ -236,6 +311,53 @@ class OpenAICompatClient:
                 "error": "HTTP generate failed",
             }
         )
+
+
+class AzureOpenAIClient(OpenAICompatClient):
+    """Azure OpenAI / HKBU GenAI: `api-key` header and deployment-scoped URL."""
+
+    def __init__(
+        self,
+        api_base: str,
+        model: str,
+        timeout_s: float = 300.0,
+        max_retries: int = 1,
+        api_key: str | None = None,
+        api_version: str | None = None,
+        provider: str | None = "azure",
+    ):
+        super().__init__(
+            api_base=api_base,
+            model=model,
+            timeout_s=timeout_s,
+            max_retries=max_retries,
+            api_key=api_key,
+            provider=provider or "azure",
+            api_version=api_version,
+        )
+
+
+def build_http_client(
+    model: dict[str, Any],
+    timeout_s: float = 300.0,
+    max_retries: int = 1,
+    api_key: str | None = None,
+) -> OpenAICompatClient:
+    """Construct the HTTP client implied by a model row. No network."""
+    api_base = str(model["api_base"])
+    provider = normalize_provider(model.get("provider"), api_base)
+    kwargs = {
+        "api_base": api_base,
+        "model": str(model["id"]),
+        "timeout_s": timeout_s,
+        "max_retries": max_retries,
+        "api_key": api_key,
+        "api_version": model.get("api_version"),
+        "provider": provider,
+    }
+    if provider == "azure":
+        return AzureOpenAIClient(**kwargs)
+    return OpenAICompatClient(**kwargs)
 
 
 def provider_root(api_base: str) -> str:

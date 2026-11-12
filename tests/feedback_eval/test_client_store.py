@@ -12,13 +12,20 @@ from pathlib import Path
 
 import pytest
 
+import httpx
+
 from feedback_eval.client import (
+    AzureOpenAIClient,
     FakeClient,
     OpenAICompatClient,
+    build_http_client,
     classify_generation,
     completion_payload,
+    normalize_provider,
+    provider_has_wallet,
     sanitize_settings,
 )
+from feedback_eval.cli import _refresh_prior_wallet
 from feedback_eval.store import (
     ConfigConflictError,
     IncompleteLedgerError,
@@ -129,7 +136,12 @@ def test_timeout_rate_limit_truncation_empty_and_missing_usage_are_not_refusals(
 
 def test_sanitize_settings_drops_secrets() -> None:
     cleaned = sanitize_settings(
-        {"model": "mock-model", "api_key": "secret-key", "Authorization": "Bearer secret-key"}
+        {
+            "model": "mock-model",
+            "api_key": "secret-key",
+            "Authorization": "Bearer secret-key",
+            "api-key": "secret-key",
+        }
     )
     blob = json.dumps(cleaned)
     assert "secret-key" not in blob
@@ -153,12 +165,134 @@ def test_completion_payload_can_disable_thinking() -> None:
     assert "secret-key" not in json.dumps(payload)
 
 
+def test_azure_payload_raises_max_tokens_to_gateway_minimum() -> None:
+    payload = completion_payload(
+        [{"role": "user", "content": "hi"}],
+        {"temperature": 0.0, "max_tokens": 8},
+        "gpt-4.1",
+        provider="azure",
+        api_base="https://genai.hkbu.edu.hk/general/rest",
+    )
+    assert payload["max_tokens"] == 16
+    assert "model" not in payload
+    openai = completion_payload(
+        [{"role": "user", "content": "hi"}],
+        {"temperature": 0.0, "max_tokens": 8},
+        "deepseek-flash",
+    )
+    assert openai["max_tokens"] == 8
+
+
 def test_openai_client_reads_api_key_from_env_only(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("API_KEY", "secret-key")
     client = OpenAICompatClient(api_base="http://127.0.0.1:9/v1", model="mock-model")
     headers = client.headers()
     assert headers["Authorization"] == "Bearer secret-key"
     assert "secret-key" not in repr(client)
+
+
+def test_hkbu_host_is_azure_provider_without_explicit_flag() -> None:
+    assert normalize_provider(None, "https://genai.hkbu.edu.hk/general/rest") == "azure"
+    assert normalize_provider("hkbu", "https://example.invalid/v1") == "azure"
+    assert normalize_provider(None, "https://api.deepseek.com/v1") == "openai"
+    assert provider_has_wallet("azure") is False
+    assert provider_has_wallet("openai") is True
+
+
+def test_azure_client_uses_api_key_header_and_deployment_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    class _Response:
+        status_code = 200
+        text = ""
+
+        def json(self) -> dict:
+            return {
+                "choices": [
+                    {"message": {"content": "pong"}, "finish_reason": "stop"}
+                ],
+                "usage": {
+                    "prompt_tokens": 1,
+                    "completion_tokens": 1,
+                    "total_tokens": 2,
+                },
+            }
+
+    def fake_post(self: httpx.Client, url: str, headers=None, json=None):
+        captured["url"] = url
+        captured["headers"] = headers
+        captured["json"] = json
+        return _Response()
+
+    monkeypatch.setattr(httpx.Client, "post", fake_post)
+    client = AzureOpenAIClient(
+        api_base="https://genai.hkbu.edu.hk/general/rest",
+        model="gpt-4.1",
+        api_version="2024-02-01",
+        api_key="secret-key",
+    )
+    result = client.generate(
+        [{"role": "user", "content": "hi"}],
+        {"temperature": 0.0, "max_tokens": 8, "thinking": {"type": "disabled"}},
+    )
+    assert captured["url"] == (
+        "https://genai.hkbu.edu.hk/general/rest/deployments/gpt-4.1/"
+        "chat/completions?api-version=2024-02-01"
+    )
+    headers = captured["headers"]
+    assert isinstance(headers, dict)
+    assert headers["api-key"] == "secret-key"
+    assert "Authorization" not in headers
+    body = captured["json"]
+    assert isinstance(body, dict)
+    assert "model" not in body
+    assert "thinking" not in body
+    assert body["messages"] == [{"role": "user", "content": "hi"}]
+    assert "secret-key" not in repr(client)
+    assert result["text"] == "pong"
+    assert classify_generation(result) == "success"
+
+
+def test_build_http_client_selects_azure_for_hkbu_base() -> None:
+    azure = build_http_client(
+        {
+            "id": "gpt-4.1",
+            "api_base": "https://genai.hkbu.edu.hk/general/rest",
+            "provider": "azure",
+            "api_version": "2024-02-01",
+        }
+    )
+    openai = build_http_client(
+        {"id": "deepseek-flash", "api_base": "https://api.deepseek.com/v1"}
+    )
+    assert type(azure).__name__ == "AzureOpenAIClient"
+    assert type(openai).__name__ == "OpenAICompatClient"
+    assert azure.chat_completions_url() == (
+        "https://genai.hkbu.edu.hk/general/rest/deployments/gpt-4.1/"
+        "chat/completions?api-version=2024-02-01"
+    )
+    assert openai.chat_completions_url() == "https://api.deepseek.com/v1/chat/completions"
+
+
+def test_azure_wallet_refresh_does_not_invent_zero_balance(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("API_KEY", "secret-key")
+    with pytest.raises(StoreError, match="provider_has_no_wallet"):
+        _refresh_prior_wallet(
+            tmp_path,
+            {
+                "models": [
+                    {
+                        "provider": "azure",
+                        "api_base": "https://genai.hkbu.edu.hk/general/rest",
+                    }
+                ],
+                "cost_cap": {"currency": "HKD"},
+            },
+        )
 
 
 def test_fingerprint_changes_when_model_or_prompts_change() -> None:

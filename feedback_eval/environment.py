@@ -34,11 +34,18 @@ def load_dotenv_file(path: Path, environ: dict[str, str] | None = None) -> list[
 
 
 def apply_env_models(development: dict[str, Any], env: dict[str, str]) -> dict[str, Any]:
-    """Fill null model ids/api_base from the process environment. No secrets."""
+    """Fill null model ids/api_base/provider from the process environment. No secrets."""
     overlay = copy.deepcopy(development)
-    api_base = env.get("API_BASE") or env.get("OPENAI_API_BASE") or env.get("OPENAI_BASE_URL")
+    api_base = (
+        env.get("API_BASE")
+        or env.get("AZURE_OPENAI_ENDPOINT")
+        or env.get("OPENAI_API_BASE")
+        or env.get("OPENAI_BASE_URL")
+    )
     if api_base:
         api_base = api_base.rstrip("/")
+    provider = env.get("FEEDBACK_EVAL_API_PROVIDER") or env.get("API_PROVIDER")
+    api_version = env.get("AZURE_OPENAI_API_VERSION") or env.get("API_VERSION")
     ids = [
         env.get("FEEDBACK_EVAL_MODEL_A") or env.get("MODEL_A") or env.get("MODEL"),
         env.get("FEEDBACK_EVAL_MODEL_B") or env.get("MODEL_B"),
@@ -48,6 +55,10 @@ def apply_env_models(development: dict[str, Any], env: dict[str, str]) -> dict[s
             model["id"] = model_id
         if api_base and not model.get("api_base"):
             model["api_base"] = api_base
+        if provider and not model.get("provider"):
+            model["provider"] = provider
+        if api_version and not model.get("api_version"):
+            model["api_version"] = api_version
     return overlay
 
 

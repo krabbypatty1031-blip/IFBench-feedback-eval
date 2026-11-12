@@ -1,7 +1,7 @@
 """CLI for audit, dry-run, freeze, budget estimate, and gated development trials.
 
 `dry-run` and `trial-dev --offline` use FakeClient only. `trial-dev --paid`
-constructs OpenAICompatClient only after authorization, an API key, and a
+constructs an HTTP client only after authorization, an API key, and a
 positive development call_limit. Historical spend stays unverified, not zero.
 """
 
@@ -18,9 +18,11 @@ from typing import Any
 
 from feedback_eval.client import (
     FakeClient,
-    OpenAICompatClient,
+    build_http_client,
     classify_generation,
     fetch_user_balance,
+    normalize_provider,
+    provider_has_wallet,
 )
 from feedback_eval.dataset import file_sha256, load_items, split_fingerprint
 from feedback_eval.environment import apply_env_models, load_dotenv_file
@@ -48,6 +50,33 @@ logger = logging.getLogger(__name__)
 
 _OK_USAGE = {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2}
 _DEFAULT_CONFIG = Path("configs") / "feedback_eval" / "development.yaml"
+
+
+def _http_client_label(development: dict[str, Any]) -> str:
+    """Name the HTTP client class implied by the first model row."""
+    first = (development.get("models") or [{}])[0]
+    if normalize_provider(first.get("provider"), first.get("api_base")) == "azure":
+        return "AzureOpenAIClient"
+    return "OpenAICompatClient"
+
+
+def _env_api_key() -> str | None:
+    """Read the live key. Never log or persist the value."""
+    return (
+        os.environ.get("API_KEY")
+        or os.environ.get("FEEDBACK_EVAL_API_KEY")
+        or os.environ.get("AZURE_OPENAI_API_KEY")
+    )
+
+
+def _refuse_secret_in_text(text: str) -> None:
+    """Abort if any known env secret leaked into a record or summary."""
+    for key in ("API_KEY", "FEEDBACK_EVAL_API_KEY", "AZURE_OPENAI_API_KEY"):
+        secret = os.environ.get(key)
+        if secret and secret in text:
+            raise StoreError("refusing to write a summary that contains the API key")
+
+
 _OFFICIAL_CONFIG = Path("configs") / "feedback_eval" / "official.yaml"
 
 
@@ -396,13 +425,11 @@ def cmd_trial_dev_paid(
     max_retries = int((development.get("retry") or {}).get("rate_limit_retries") or 1)
     probes: list[dict[str, Any]] = []
     stopped_reason = None
+    client_name = _http_client_label(development)
     try:
         for model in development["models"]:
-            inner = OpenAICompatClient(
-                api_base=str(model["api_base"]),
-                model=str(model["id"]),
-                timeout_s=timeout_s,
-                max_retries=max_retries,
+            inner = build_http_client(
+                model, timeout_s=timeout_s, max_retries=max_retries
             )
             client = LimitedClient(inner, call_limit, counter)
             ping_settings = {
@@ -447,11 +474,8 @@ def cmd_trial_dev_paid(
             if model.get("availability") != "probe_ok":
                 logger.warning("Skipping items for unreachable %s", model.get("id"))
                 continue
-            inner = OpenAICompatClient(
-                api_base=str(model["api_base"]),
-                model=str(model["id"]),
-                timeout_s=timeout_s,
-                max_retries=max_retries,
+            inner = build_http_client(
+                model, timeout_s=timeout_s, max_retries=max_retries
             )
             client = LimitedClient(inner, call_limit, counter)
             item_config = {
@@ -481,7 +505,7 @@ def cmd_trial_dev_paid(
         observed_usage=usage_totals if usage_totals["n_outputs"] else None,
     )
     summary = {
-        "client": "OpenAICompatClient",
+        "client": client_name,
         "paid": True,
         "n_items": n_items,
         "n_models": len(development["models"]),
@@ -503,12 +527,10 @@ def cmd_trial_dev_paid(
     }
     _write_json(store_dir / "trial_summary.json", summary)
     dumped = json.dumps(summary)
-    secret = os.environ.get("API_KEY") or os.environ.get("FEEDBACK_EVAL_API_KEY")
-    if secret and secret in dumped:
-        raise StoreError("refusing to write a summary that contains the API key")
+    _refuse_secret_in_text(dumped)
     print(f"planned_calls={n_items * len(development['models']) * 4 + len(development['models'])}")
     print(f"actual_calls={counter['n']}")
-    print(f"client=OpenAICompatClient")
+    print(f"client={client_name}")
     print(f"paid=true")
     print(f"call_limit={call_limit}")
     if stopped_reason:
@@ -585,7 +607,7 @@ def cmd_trial_dev_offline(
 
 def _refresh_prior_wallet(repo_root: Path, development: dict[str, Any]) -> dict[str, Any]:
     """Fetch the live wallet and write prior_balance.json. Never logs the key."""
-    api_key = os.environ.get("API_KEY") or os.environ.get("FEEDBACK_EVAL_API_KEY")
+    api_key = _env_api_key()
     if not api_key:
         raise StoreError("api_key_missing")
     api_base = None
@@ -594,6 +616,12 @@ def _refresh_prior_wallet(repo_root: Path, development: dict[str, Any]) -> dict[
             api_base = str(model["api_base"])
             break
     api_base = api_base or os.environ.get("API_BASE") or "https://api.deepseek.com/v1"
+    first = (development.get("models") or [{}])[0]
+    provider = normalize_provider(first.get("provider"), api_base)
+    if not provider_has_wallet(provider, api_base):
+        # HKBU/Azure has no account-balance endpoint. Do not probe DeepSeek
+        # /user/balance or invent a zero wallet.
+        raise StoreError("provider_has_no_wallet")
     payload = fetch_user_balance(api_base, api_key)
     preferred = str((development.get("cost_cap") or {}).get("currency") or "CNY")
     wallet = wallet_from_provider_payload(payload, preferred_currency=preferred)
@@ -613,10 +641,7 @@ def _write_execution_summary(
     if len(links) > 12:
         payload.pop("score_links", None)
     _write_json(store_dir / "execution_summary.json", payload)
-    secret = os.environ.get("API_KEY") or os.environ.get("FEEDBACK_EVAL_API_KEY")
-    dumped = json.dumps(payload)
-    if secret and secret in dumped:
-        raise StoreError("refusing to write a summary that contains the API key")
+    _refuse_secret_in_text(json.dumps(payload))
     return payload
 
 
@@ -733,13 +758,11 @@ def cmd_run_official_paid(
     cap_amount = float(development["cost_cap"]["amount"])
     wallet = float(prior["balance"])
     clients: dict[str, Any] = {}
+    client_name = _http_client_label(development)
     for model in development["models"]:
         model_id = str(model["id"])
-        inner = OpenAICompatClient(
-            api_base=str(model["api_base"]),
-            model=model_id,
-            timeout_s=timeout_s,
-            max_retries=max_retries,
+        inner = build_http_client(
+            model, timeout_s=timeout_s, max_retries=max_retries
         )
         clients[model_id] = BudgetedClient(
             inner,
@@ -764,7 +787,7 @@ def cmd_run_official_paid(
             store_dir,
             {**progress, "calls_this_invocation": calls, "stopped": None},
             {
-                "client": "OpenAICompatClient",
+                "client": client_name,
                 "paid": True,
                 "ready_for_official_run": True,
                 "n_items": len(items),
@@ -785,7 +808,7 @@ def cmd_run_official_paid(
         store_dir,
         summary,
         {
-            "client": "OpenAICompatClient",
+            "client": client_name,
             "paid": True,
             "ready_for_official_run": True,
             "n_items": len(items),
@@ -807,7 +830,7 @@ def cmd_run_official_paid(
     print(f"cost_unknown={dumped['cost_unknown']}")
     print(f"actual_calls={dumped['calls_this_invocation']}")
     print(f"stopped={dumped.get('stopped')}")
-    print("client=OpenAICompatClient")
+    print(f"client={client_name}")
     print("paid=true")
     return 0 if dumped["missing"] == 0 and not dumped.get("stopped") else 4
 

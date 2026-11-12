@@ -20,3 +20,23 @@ def test_model_overlay_does_not_mutate_config():
                                   {"id": "fixed", "api_base": "https://example.invalid/v1"}]
     assert config == {"models": [{"id": None}, {"id": "fixed"}]}
     assert cli.apply_env_models is apply_env_models
+
+
+def test_model_overlay_fills_azure_provider_and_version():
+    config = {"models": [{"id": None, "api_base": None}, {"id": None, "api_base": None}]}
+    updated = apply_env_models(
+        config,
+        {
+            "MODEL_A": "gpt-4.1",
+            "MODEL_B": "gpt-4o",
+            "API_PROVIDER": "azure",
+            "AZURE_OPENAI_ENDPOINT": "https://genai.hkbu.edu.hk/general/rest/",
+            "AZURE_OPENAI_API_VERSION": "2024-02-01",
+        },
+    )
+    assert updated["models"][0]["id"] == "gpt-4.1"
+    assert updated["models"][0]["provider"] == "azure"
+    assert updated["models"][0]["api_version"] == "2024-02-01"
+    assert updated["models"][0]["api_base"] == "https://genai.hkbu.edu.hk/general/rest"
+    assert updated["models"][1]["id"] == "gpt-4o"
+    assert updated["models"][1]["provider"] == "azure"
