@@ -707,23 +707,28 @@ def decide_paid_trial(
         or env.get("AZURE_OPENAI_API_KEY")
     ):
         reason = "api_key_missing"
-    elif development and int(call_limit or 0) > 0:
-        logger.warning(
-            "Development trial allowed with unverified balance under call_limit=%s",
-            call_limit,
-        )
-        return {
-            "allowed": True,
-            "reason": None,
-            "balance_status": prior.get("status"),
-            "prior_spent": prior.get("spent"),
-            "prior_balance": prior.get("balance"),
-            "call_limit": int(call_limit),
-            "note": (
-                "Historical balance unverified; development stop is call_limit. "
-                "Do not treat prior spend as zero."
-            ),
-        }
+    elif development:
+        # Dev trials must not fall through to official call_cap: LimitedClient
+        # treats 0 as already exhausted and would block the first generate.
+        if int(call_limit or 0) <= 0:
+            reason = "call_limit_missing"
+        else:
+            logger.warning(
+                "Development trial allowed with unverified balance under call_limit=%s",
+                call_limit,
+            )
+            return {
+                "allowed": True,
+                "reason": None,
+                "balance_status": prior.get("status"),
+                "prior_spent": prior.get("spent"),
+                "prior_balance": prior.get("balance"),
+                "call_limit": int(call_limit),
+                "note": (
+                    "Historical balance unverified; development stop is call_limit. "
+                    "Do not treat prior spend as zero."
+                ),
+            }
     elif call_cap_is_confirmed(cost_cap):
         call_cap = int(cost_cap["call_cap"])
         logger.warning(

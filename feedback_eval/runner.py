@@ -84,6 +84,17 @@ def _empty_generation(error: str) -> dict[str, Any]:
     }
 
 
+def _with_accounting(record: dict[str, Any]) -> dict[str, Any]:
+    """Classify the generation on the in-memory record, not only after persist.
+
+    `put_record` copies the dict before writing `accounting_status`, so
+    `run_item` return values and store-less dry runs would otherwise stay
+    unclassified even though `reconcile()` keys off this field.
+    """
+    record["accounting_status"] = classify_generation(record.get("generation") or {})
+    return record
+
+
 def run_item(item: dict[str, Any], client: Any, config: dict[str, Any]) -> dict[str, Any]:
     """Run B0 once, then B1–B3 as independent one-shot revisions.
 
@@ -125,18 +136,20 @@ def run_item(item: dict[str, Any], client: Any, config: dict[str, Any]) -> dict[
         b0_messages = [{"role": "user", "content": item["prompt"]}]
         b0_generation = client.generate(b0_messages, settings)
         n_client_calls += 1
-        b0_record = {
-            "record_key": record_key(protocol, model, item_id, "B0", repeat),
-            "item_id": item_id,
-            "condition": "B0",
-            "repeat": repeat,
-            "messages": b0_messages,
-            "generation": b0_generation,
-            "score": _score_text(item, b0_generation.get("text")),
-            "feedback": None,
-            "feedback_error": None,
-            "settings": settings,
-        }
+        b0_record = _with_accounting(
+            {
+                "record_key": record_key(protocol, model, item_id, "B0", repeat),
+                "item_id": item_id,
+                "condition": "B0",
+                "repeat": repeat,
+                "messages": b0_messages,
+                "generation": b0_generation,
+                "score": _score_text(item, b0_generation.get("text")),
+                "feedback": None,
+                "feedback_error": None,
+                "settings": settings,
+            }
+        )
         persist("B0", b0_record)
         logger.info(
             "Generated B0 key=%s status=%s",
@@ -168,18 +181,22 @@ def run_item(item: dict[str, Any], client: Any, config: dict[str, Any]) -> dict[
                     "No %s feedback for key=%s: %s", condition, item_id, exc
                 )
         if feedback_error:
-            record = {
-                "record_key": record_key(protocol, model, item_id, condition, repeat),
-                "item_id": item_id,
-                "condition": condition,
-                "repeat": repeat,
-                "messages": None,
-                "generation": _empty_generation(f"feedback_unavailable: {feedback_error}"),
-                "score": None,
-                "feedback": None,
-                "feedback_error": feedback_error,
-                "settings": settings,
-            }
+            record = _with_accounting(
+                {
+                    "record_key": record_key(protocol, model, item_id, condition, repeat),
+                    "item_id": item_id,
+                    "condition": condition,
+                    "repeat": repeat,
+                    "messages": None,
+                    "generation": _empty_generation(
+                        f"feedback_unavailable: {feedback_error}"
+                    ),
+                    "score": None,
+                    "feedback": None,
+                    "feedback_error": feedback_error,
+                    "settings": settings,
+                }
+            )
             persist(condition, record)
             results[condition] = record
             continue
@@ -193,18 +210,20 @@ def run_item(item: dict[str, Any], client: Any, config: dict[str, Any]) -> dict[
         ]
         generation = client.generate(messages, settings)
         n_client_calls += 1
-        record = {
-            "record_key": record_key(protocol, model, item_id, condition, repeat),
-            "item_id": item_id,
-            "condition": condition,
-            "repeat": repeat,
-            "messages": messages,
-            "generation": generation,
-            "score": _score_text(item, generation.get("text")),
-            "feedback": feedback_text,
-            "feedback_error": None,
-            "settings": settings,
-        }
+        record = _with_accounting(
+            {
+                "record_key": record_key(protocol, model, item_id, condition, repeat),
+                "item_id": item_id,
+                "condition": condition,
+                "repeat": repeat,
+                "messages": messages,
+                "generation": generation,
+                "score": _score_text(item, generation.get("text")),
+                "feedback": feedback_text,
+                "feedback_error": None,
+                "settings": settings,
+            }
+        )
         persist(condition, record)
         results[condition] = record
         logger.info(

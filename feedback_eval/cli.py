@@ -122,8 +122,11 @@ class LimitedClient:
     """Wrap a live client and refuse generates after `call_limit`."""
 
     def __init__(self, inner: Any, call_limit: int, counter: dict[str, int]):
+        limit = int(call_limit)
+        if limit <= 0:
+            raise ValueError("LimitedClient requires a positive call_limit")
         self._inner = inner
-        self._call_limit = call_limit
+        self._call_limit = limit
         self._counter = counter
 
     def generate(self, messages: list[dict], settings: dict) -> dict:
@@ -927,6 +930,12 @@ def _prepare_analysis_records(
         source_names.append(str(path))
         logger.info("Prepared overlay n=%s from %s", len(rows), path)
     merged, replaced = overlay_records(records, groups)
+    logger.info(
+        "Overlay merge n_base=%s n_replaced=%s n_out=%s",
+        len(records),
+        len(replaced),
+        len(merged),
+    )
     return merged, replaced, source_names
 
 
@@ -961,7 +970,9 @@ def cmd_analyze(
         logger.info("Loaded freeze protocol=%s", freeze.get("protocol"))
     else:
         logger.warning("No freeze.json under %s; analysis still runs on raw records", store_dir)
-    records, replaced, overlay_sources = _prepare_analysis_records(
+    # First return value is already overlay-merged (or the raw store if
+    # --no-overlay / no overlay dirs). Do not call load_records() again here.
+    analysis_records, replaced, overlay_sources = _prepare_analysis_records(
         store_dir, freeze, overlay_dirs, no_overlay
     )
     # Keep the 4096-only tables if this is the first overlaid official rebuild.
@@ -976,9 +987,12 @@ def cmd_analyze(
         raw_archive.write_text(current_analysis.read_text(encoding="utf-8"), encoding="utf-8")
         logger.info("Archived 4096-only analysis to %s", raw_archive)
     groups = _load_homology_groups(homology_path)
-    summary = summarize_metrics(records)
+    summary = summarize_metrics(analysis_records)
     diffs = bootstrap_paired_diffs(
-        records, n_resamples=int(n_resamples), seed=int(seed), groups=groups
+        analysis_records,
+        n_resamples=int(n_resamples),
+        seed=int(seed),
+        groups=groups,
     )
     appendix_path = store_dir / "appendix_b3_32768.json"
     appendix = None
@@ -1002,7 +1016,7 @@ def cmd_analyze(
         "protocol": freeze.get("protocol"),
         "freeze_sha256": freeze.get("freeze_sha256"),
         "parameters": freeze.get("parameters"),
-        "n_records": len(records),
+        "n_records": len(analysis_records),
         "missing_data_rule": "report_missing_do_not_impute",
         "homology_groups": groups,
         "summary": summary,
@@ -1025,10 +1039,10 @@ def cmd_analyze(
     out_path = store_dir / "analysis.json"
     write_analysis_json(out_path, payload)
     write_analysis_json(store_dir / "overlay_manifest.json", overlay_block)
-    logger.info("Wrote analysis n_records=%s path=%s", len(records), out_path)
+    logger.info("Wrote analysis n_records=%s path=%s", len(analysis_records), out_path)
     print(f"wrote={out_path}")
     print(f"protocol={freeze.get('protocol')}")
-    print(f"n_records={len(records)}")
+    print(f"n_records={len(analysis_records)}")
     acc = summary.get("accounting") or {}
     print(
         "accounting "

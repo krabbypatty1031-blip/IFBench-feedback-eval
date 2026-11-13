@@ -216,6 +216,57 @@ def test_cli_analyze_and_review_pack_write_store_outputs(
     assert len(key["key"]) == 16
 
 
+def test_cli_analyze_summarizes_overlay_not_raw_store(
+    tmp_path: Path, capsys
+) -> None:
+    """analyze --overlay must score recovered text, not the empty 4096 row."""
+    official = tmp_path / "official"
+    overlay = tmp_path / "overlay"
+    (official / "records").mkdir(parents=True)
+    (overlay / "records").mkdir(parents=True)
+    empty = _empty("m", "1", "B0")
+    recovered = _success("m", "1", "B0", strict=True)
+    recovered["settings"]["max_tokens"] = 16384
+    (official / "records" / f"{empty['record_key']}.json").write_text(
+        json.dumps(empty), encoding="utf-8"
+    )
+    (overlay / "records" / f"{recovered['record_key']}.json").write_text(
+        json.dumps(recovered), encoding="utf-8"
+    )
+    (official / "freeze.json").write_text(
+        json.dumps({"protocol": "analysis-test", "parameters": {"max_tokens": 4096}}),
+        encoding="utf-8",
+    )
+    assert main(
+        ["analyze", "--store-dir", str(official), "--no-overlay", "--n-resamples", "8"]
+    ) == 0
+    capsys.readouterr()
+    raw = json.loads((official / "analysis.json").read_text(encoding="utf-8"))
+    assert raw["summary"]["accounting"]["success"] == 0
+    assert raw["summary"]["accounting"]["empty_response"] == 1
+
+    assert main(
+        [
+            "analyze",
+            "--store-dir",
+            str(official),
+            "--overlay",
+            str(overlay),
+            "--n-resamples",
+            "8",
+        ]
+    ) == 0
+    capsys.readouterr()
+    merged = json.loads((official / "analysis.json").read_text(encoding="utf-8"))
+    assert merged["overlay"]["n_replaced"] == 1
+    assert merged["summary"]["accounting"]["success"] == 1
+    assert merged["summary"]["by_model"]["m"]["strict_prompt"]["B0"] == {
+        "n": 1,
+        "d": 1,
+        "value": 1.0,
+    }
+
+
 def test_overlay_replaces_empty_keeps_existing_success() -> None:
     """Recovered text replaces empty/error; a 4096 success is not swapped."""
     base = [

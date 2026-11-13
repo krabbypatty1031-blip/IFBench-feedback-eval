@@ -16,7 +16,7 @@ from feedback_eval.client import FakeClient
 from feedback_eval.feedback import make_feedback
 from feedback_eval.runner import load_prompt_templates, run_item, synthetic_conjunction_item
 from feedback_eval.scoring import score
-from feedback_eval.store import RunStore, inspect_prior_ledger
+from feedback_eval.store import RunStore, inspect_prior_ledger, record_key
 from ifbench import instructions_registry
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -95,6 +95,35 @@ def test_b0_called_once_and_revision_branches_are_independent() -> None:
     assert "one line per constraint" not in b2_user
     assert result["B0"]["generation"]["text"] == b0_text
     assert result["B1"]["generation"]["text"] == "B1 and but so revised"
+    assert result["B0"]["accounting_status"] == "success"
+    assert result["B1"]["accounting_status"] == "success"
+    assert result["B2"]["accounting_status"] == "success"
+    assert result["B3"]["accounting_status"] == "success"
+
+
+def test_empty_generation_is_classified_without_store() -> None:
+    """Store-less runs still need accounting_status for summarize/reconcile keys."""
+    item = _conjunction_item()
+    empty = {
+        "text": "",
+        "usage": {"prompt_tokens": 1, "completion_tokens": 0, "total_tokens": 1},
+        "finish_reason": "stop",
+        "latency_ms": 1.0,
+        "error": None,
+    }
+    client = FakeClient([empty, empty, empty, empty])
+    result = run_item(
+        item,
+        client,
+        {
+            "model": "mock-model",
+            "protocol": "feedback-eval-dev-v1",
+            "prompts": load_prompt_templates(),
+            "parameters": {"temperature": 0.0, "max_tokens": 128},
+        },
+    )
+    assert result["B0"]["accounting_status"] == "empty_response"
+    assert result["B3"]["accounting_status"] == "empty_response"
 
 
 def test_passed_initial_answer_is_still_revised() -> None:
@@ -214,6 +243,11 @@ def test_four_items_resume_does_not_regenerate(tmp_path: Path) -> None:
     for item in items:
         run_item(item, first, config)
     assert len(first.calls) == 16
+    stored = config["store"].get_record(
+        record_key("feedback-eval-dev-v1", "mock-model", "0", "B0", 0)
+    )
+    assert stored is not None
+    assert stored["accounting_status"] == "success"
     second = FakeClient([])
     for item in items:
         run_item(item, second, config)

@@ -507,6 +507,24 @@ def test_paid_trial_blocked_without_authorization_key_or_balance() -> None:
     assert allowed_dev["allowed"] is True
     assert allowed_dev["prior_spent"] is None
     assert allowed_dev["call_limit"] == 16
+    blocked_dev_limit = decide_paid_trial(
+        {
+            "FEEDBACK_EVAL_AUTHORIZE_SPEND": "1",
+            "API_KEY": "secret-key",
+        },
+        prior,
+        {
+            "amount": None,
+            "currency": None,
+            "unit": "calls",
+            "call_cap": 2288,
+            "status": "confirmed",
+        },
+        development=True,
+        call_limit=0,
+    )
+    assert blocked_dev_limit["allowed"] is False
+    assert blocked_dev_limit["reason"] == "call_limit_missing"
     allowed_calls = decide_paid_trial(
         {
             "FEEDBACK_EVAL_AUTHORIZE_SPEND": "1",

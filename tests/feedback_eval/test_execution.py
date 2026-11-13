@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from feedback_eval.cli import main
+from feedback_eval.cli import LimitedClient, main
 from feedback_eval.client import FakeClient, OpenAICompatClient
 from feedback_eval.execution import (
     BudgetExhausted,
@@ -156,6 +156,12 @@ def test_paid_official_cli_blocked_without_auth(
     assert code == 3
     assert "official_run_blocked" in captured
     assert not list(tmp_path.glob("records/*.json"))
+
+
+def test_limited_client_rejects_non_positive_call_limit() -> None:
+    """call_limit=0 would otherwise treat the first generate as already exhausted."""
+    with pytest.raises(ValueError, match="positive call_limit"):
+        LimitedClient(FakeClient([ok()]), 0, {"n": 0})
 
 
 def test_call_capped_client_stops_at_limit() -> None:
