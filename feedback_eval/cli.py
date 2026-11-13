@@ -8,6 +8,7 @@ positive development call_limit. Historical spend stays unverified, not zero.
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import logging
 import os
@@ -26,8 +27,12 @@ from feedback_eval.client import (
 )
 from feedback_eval.dataset import file_sha256, load_items, split_fingerprint
 from feedback_eval.environment import apply_env_models, load_dotenv_file
-from feedback_eval.execution import BudgetedClient, run_schedule, summarize
-from feedback_eval.runner import PROMPTS_PATH, load_prompt_templates, run_item, synthetic_conjunction_item
+from feedback_eval.execution import (
+    BudgetedClient,
+    CallCappedClient,
+    run_schedule,
+    summarize,
+)
 from feedback_eval.store import (
     STORE_SCHEMA_VERSION,
     RunStore,
@@ -35,6 +40,7 @@ from feedback_eval.store import (
     _OFFICIAL_DATA_SHA256,
     _canonical_sha256,
     build_freeze,
+    call_cap_is_confirmed,
     conservative_unit_prices,
     decide_paid_trial,
     default_prior_ledger_candidates,
@@ -45,6 +51,16 @@ from feedback_eval.store import (
     wallet_from_provider_payload,
     write_prior_balance_file,
 )
+from feedback_eval.analysis import (
+    bootstrap_paired_diffs,
+    build_review_pack,
+    hydrate_overlay_record,
+    load_records,
+    overlay_records,
+    summarize as summarize_metrics,
+    write_json as write_analysis_json,
+)
+from feedback_eval.runner import PROMPTS_PATH, load_prompt_templates, run_item, synthetic_conjunction_item
 
 logger = logging.getLogger(__name__)
 
@@ -701,7 +717,7 @@ def cmd_run_official_paid(
     n_items: int | None = None,
     config_path: Path | None = None,
 ) -> int:
-    """Paid official test split. Requires a ready freeze, live wallet, and cap."""
+    """Paid official test split. Wallet providers need a live balance; Azure uses call_cap."""
     repo_root = _repo_root()
     load_dotenv_file(repo_root / ".env")
     config_file = config_path or _OFFICIAL_CONFIG
@@ -709,12 +725,24 @@ def cmd_run_official_paid(
         load_mapping_yaml(_resolve_config_path(config_file, repo_root)),
         dict(os.environ),
     )
-    try:
-        prior = _refresh_prior_wallet(repo_root, development)
-    except Exception as exc:
-        logger.error("Official wallet refresh failed: %s", exc)
-        print(f"official_run_blocked reason=balance_unverified")
-        return 3
+    first = (development.get("models") or [{}])[0]
+    api_base = str(first.get("api_base") or os.environ.get("API_BASE") or "")
+    provider = normalize_provider(first.get("provider"), api_base)
+    if provider_has_wallet(provider, api_base):
+        try:
+            prior = _refresh_prior_wallet(repo_root, development)
+        except Exception as exc:
+            logger.error("Official wallet refresh failed: %s", exc)
+            print("official_run_blocked reason=balance_unverified")
+            return 3
+    else:
+        # HKBU/Azure has no /user/balance. Do not write a forged zero wallet.
+        prior = inspect_prior_ledger(default_prior_ledger_candidates(repo_root))
+        logger.warning(
+            "Skipping wallet refresh provider=%s prior_status=%s",
+            provider,
+            prior.get("status"),
+        )
     decision = decide_paid_trial(
         dict(os.environ),
         prior,
@@ -732,8 +760,14 @@ def cmd_run_official_paid(
         print("official_run_blocked reason=freeze_not_ready")
         logger.warning("Official run blocked: freeze_not_ready")
         return 3
-    cap_currency = str((development.get("cost_cap") or {}).get("currency") or "")
-    if prior.get("currency") and cap_currency and prior.get("currency") != cap_currency:
+    cap = development.get("cost_cap") or {}
+    cap_currency = str(cap.get("currency") or "")
+    if (
+        provider_has_wallet(provider, api_base)
+        and prior.get("currency")
+        and cap_currency
+        and prior.get("currency") != cap_currency
+    ):
         print("official_run_blocked reason=currency_mismatch")
         logger.error(
             "Wallet currency %s != cap currency %s",
@@ -755,24 +789,28 @@ def cmd_run_official_paid(
     timeout_s = float((development.get("retry") or {}).get("timeout_s") or 300.0)
     max_retries = int((development.get("retry") or {}).get("rate_limit_retries") or 1)
     max_tokens = int((development.get("parameters") or {}).get("max_tokens") or 4096)
-    cap_amount = float(development["cost_cap"]["amount"])
-    wallet = float(prior["balance"])
     clients: dict[str, Any] = {}
     client_name = _http_client_label(development)
+    call_counter = {"n": 0}
     for model in development["models"]:
         model_id = str(model["id"])
         inner = build_http_client(
             model, timeout_s=timeout_s, max_retries=max_retries
         )
-        clients[model_id] = BudgetedClient(
-            inner,
-            store,
-            model_id,
-            model["unit_price"],
-            cap_amount,
-            wallet,
-            max_tokens,
-        )
+        if call_cap_is_confirmed(cap):
+            clients[model_id] = CallCappedClient(
+                inner, int(cap["call_cap"]), call_counter
+            )
+        else:
+            clients[model_id] = BudgetedClient(
+                inner,
+                store,
+                model_id,
+                model["unit_price"],
+                float(cap["amount"]),
+                float(prior["balance"]),
+                max_tokens,
+            )
     models = [str(model["id"]) for model in development["models"]]
     item_config = {
         **fingerprint,
@@ -835,6 +873,261 @@ def cmd_run_official_paid(
     return 0 if dumped["missing"] == 0 and not dumped.get("stopped") else 4
 
 
+def _format_rate(block: dict[str, Any] | None) -> str:
+    """Render n/d and the ratio, or null when the denominator is zero."""
+    block = block or {}
+    n = block.get("n", 0)
+    d = block.get("d", 0)
+    value = block.get("value")
+    if value is None:
+        return f"{n}/{d} null"
+    return f"{n}/{d} {float(value):.4f}"
+
+
+def _default_official_overlays() -> list[Path]:
+    """Recovered generations used when official tables ignore the token cap."""
+    root = _repo_root()
+    candidates = [
+        root / "runs" / "feedback_eval" / "sensitivity_empty_b0_16384",
+        root / "runs" / "feedback_eval" / "probe_b3_32768",
+    ]
+    return [path for path in candidates if (path / "records").is_dir()]
+
+
+def _items_by_id() -> dict[str, dict[str, Any]]:
+    """Official JSONL keyed by item id, used to score hydrated overlay probes."""
+    data_path = _repo_root() / "data" / "IFBench_test.jsonl"
+    return {str(item["key"]): item for item in load_items(data_path)}
+
+
+def _prepare_analysis_records(
+    store_dir: Path,
+    freeze: dict[str, Any],
+    overlay_dirs: list[Path] | None,
+    no_overlay: bool,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[str]]:
+    """Load store records and optionally overlay recovered higher-cap answers."""
+    records = load_records(store_dir)
+    if no_overlay:
+        logger.info("Overlay disabled; reporting raw store identities")
+        return records, [], []
+    paths = list(overlay_dirs) if overlay_dirs else []
+    if not paths and freeze.get("protocol") == "feedback-eval-official-hkbu-v1":
+        paths = _default_official_overlays()
+    if not paths:
+        return records, [], []
+    items = _items_by_id()
+    groups: list[tuple[str, list[dict[str, Any]]]] = []
+    source_names: list[str] = []
+    for path in paths:
+        rows = [
+            hydrate_overlay_record(row, items_by_id=items) for row in load_records(path)
+        ]
+        groups.append((str(path), rows))
+        source_names.append(str(path))
+        logger.info("Prepared overlay n=%s from %s", len(rows), path)
+    merged, replaced = overlay_records(records, groups)
+    return merged, replaced, source_names
+
+
+def _load_homology_groups(path: Path | None) -> list[list[str]]:
+    """Load homology clusters for bootstrap; missing file means item-level units."""
+    if path is None:
+        candidate = _repo_root() / "configs" / "feedback_eval" / "homology.json"
+        path = candidate if candidate.is_file() else None
+    if path is None:
+        logger.info("No homology file; bootstrap clusters by item id")
+        return []
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    groups = [[str(item_id) for item_id in (group.get("ids") or [])] for group in payload.get("groups") or []]
+    logger.info("Loaded %s homology groups from %s", len(groups), path)
+    return groups
+
+
+def cmd_analyze(
+    store_dir: Path,
+    homology_path: Path | None = None,
+    n_resamples: int = 1000,
+    seed: int = 42,
+    overlay_dirs: list[Path] | None = None,
+    no_overlay: bool = False,
+) -> int:
+    """Rebuild paired tables. Official protocol overlays recovered generations."""
+    store_dir = Path(store_dir)
+    freeze_path = store_dir / "freeze.json"
+    freeze: dict[str, Any] = {}
+    if freeze_path.is_file():
+        freeze = json.loads(freeze_path.read_text(encoding="utf-8"))
+        logger.info("Loaded freeze protocol=%s", freeze.get("protocol"))
+    else:
+        logger.warning("No freeze.json under %s; analysis still runs on raw records", store_dir)
+    records, replaced, overlay_sources = _prepare_analysis_records(
+        store_dir, freeze, overlay_dirs, no_overlay
+    )
+    # Keep the 4096-only tables if this is the first overlaid official rebuild.
+    raw_archive = store_dir / "analysis_4096_only.json"
+    current_analysis = store_dir / "analysis.json"
+    if (
+        freeze.get("protocol") == "feedback-eval-official-hkbu-v1"
+        and replaced
+        and current_analysis.is_file()
+        and not raw_archive.is_file()
+    ):
+        raw_archive.write_text(current_analysis.read_text(encoding="utf-8"), encoding="utf-8")
+        logger.info("Archived 4096-only analysis to %s", raw_archive)
+    groups = _load_homology_groups(homology_path)
+    summary = summarize_metrics(records)
+    diffs = bootstrap_paired_diffs(
+        records, n_resamples=int(n_resamples), seed=int(seed), groups=groups
+    )
+    appendix_path = store_dir / "appendix_b3_32768.json"
+    appendix = None
+    if appendix_path.is_file():
+        appendix = json.loads(appendix_path.read_text(encoding="utf-8"))
+        logger.info("Attached sensitivity appendix %s", appendix_path)
+    overlay_block = {
+        "enabled": bool(overlay_sources),
+        "policy": "prefer_better_accounting_keep_base_success",
+        "sources": overlay_sources,
+        "n_replaced": len(replaced),
+        "replaced": replaced,
+        "note": (
+            "Reported official tables treat max_tokens as an implementation "
+            "limit. Recovered text replaces empty/error identities; raw 4096 "
+            "JSON in records/ is unchanged."
+        ),
+    }
+    payload = {
+        "store_dir": str(store_dir),
+        "protocol": freeze.get("protocol"),
+        "freeze_sha256": freeze.get("freeze_sha256"),
+        "parameters": freeze.get("parameters"),
+        "n_records": len(records),
+        "missing_data_rule": "report_missing_do_not_impute",
+        "homology_groups": groups,
+        "summary": summary,
+        "bootstrap": diffs,
+        "overlay": overlay_block,
+        "cost": {
+            "amount": None,
+            "currency": None,
+            "status": "unknown",
+            "reason": "HKBU wallet spend is not reported; unit prices stay unverified",
+        },
+        "sensitivity_appendix": appendix,
+        "note": (
+            "Official reported tables overlay recovered generations when "
+            "present. Token cap is not a model-quality factor."
+            if overlay_sources
+            else "Tables are rebuilt from this store only."
+        ),
+    }
+    out_path = store_dir / "analysis.json"
+    write_analysis_json(out_path, payload)
+    write_analysis_json(store_dir / "overlay_manifest.json", overlay_block)
+    logger.info("Wrote analysis n_records=%s path=%s", len(records), out_path)
+    print(f"wrote={out_path}")
+    print(f"protocol={freeze.get('protocol')}")
+    print(f"n_records={len(records)}")
+    acc = summary.get("accounting") or {}
+    print(
+        "accounting "
+        + " ".join(
+            f"{key}={acc.get(key, 0)}"
+            for key in (
+                "success",
+                "empty_response",
+                "error",
+                "missing",
+                "truncated",
+                "rate_limit",
+                "timeout",
+            )
+        )
+    )
+    for model, block in (summary.get("by_model") or {}).items():
+        print(f"model={model} usable_ssss={block.get('usable_ssss')} n_items={block.get('n_items')}")
+        for condition in ("B0", "B1", "B2", "B3"):
+            print(
+                f"  strict_{condition}={_format_rate((block.get('strict_prompt') or {}).get(condition))}"
+            )
+        for condition in ("B1", "B2", "B3"):
+            print(f"  repair_{condition}={_format_rate((block.get('repair') or {}).get(condition))}")
+            print(f"  regress_{condition}={_format_rate((block.get('regress') or {}).get(condition))}")
+            diff = ((diffs.get(model) or {}).get(condition) or {}).get("strict_prompt_diff") or {}
+            point = diff.get("point")
+            print(
+                f"  bootstrap_{condition} point={point} "
+                f"[{diff.get('low')}, {diff.get('high')}] n_pairs={diff.get('n_pairs')}"
+            )
+    print(f"overlay_replaced={len(replaced)}")
+    print("cost_status=unknown")
+    return 0
+
+
+def cmd_review_pack(
+    store_dir: Path,
+    out_dir: Path | None = None,
+    overlay_dirs: list[Path] | None = None,
+    no_overlay: bool = False,
+) -> int:
+    """Write a blinded content-review pack from freeze human_review ids."""
+    store_dir = Path(store_dir)
+    freeze_path = store_dir / "freeze.json"
+    if not freeze_path.is_file():
+        print("review-pack requires freeze.json with human_review.item_ids")
+        return 2
+    freeze = json.loads(freeze_path.read_text(encoding="utf-8"))
+    review = freeze.get("human_review") or {}
+    item_ids = [str(item_id) for item_id in review.get("item_ids") or []]
+    if not item_ids:
+        print("freeze.json has no human_review.item_ids")
+        return 2
+    models = [str(model["id"]) for model in freeze.get("models") or [] if model.get("id")]
+    if not models:
+        print("freeze.json has no models")
+        return 2
+    records, replaced, overlay_sources = _prepare_analysis_records(
+        store_dir, freeze, overlay_dirs, no_overlay
+    )
+    logger.info(
+        "Review pack overlay sources=%s replaced=%s",
+        overlay_sources,
+        len(replaced),
+    )
+    pack = build_review_pack(
+        records, item_ids, int(review.get("seed") or 42), models
+    )
+    out_dir = Path(out_dir) if out_dir else store_dir / "review_pack"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    blinded = {key: value for key, value in pack.items() if key != "key"}
+    write_analysis_json(out_dir / "blinded.json", blinded)
+    write_analysis_json(
+        out_dir / "key.json",
+        {"seed": pack["seed"], "n_entries": pack["n_entries"], "key": pack["key"]},
+    )
+    csv_path = out_dir / "judgments.csv"
+    with csv_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["review_id", "label", "notes"])
+        for row in pack["entries"]:
+            writer.writerow([row["review_id"], "", ""])
+    logger.info(
+        "Wrote review pack n_entries=%s out_dir=%s single_rater=%s",
+        pack["n_entries"],
+        out_dir,
+        pack.get("single_rater"),
+    )
+    print(f"wrote={out_dir}")
+    print(f"n_items={pack['n_items']}")
+    print(f"n_entries={pack['n_entries']}")
+    print(f"seed={pack['seed']}")
+    print("single_rater=true")
+    print("labels=complete,partial,incomplete,cannot_judge")
+    print(f"overlay_replaced={len(replaced)}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """CLI entry. Paid generate is gated; dry-run and offline trial never network."""
     parser = argparse.ArgumentParser(prog="feedback_eval")
@@ -863,6 +1156,22 @@ def main(argv: list[str] | None = None) -> int:
     official.add_argument("--paid", action="store_true")
     official.add_argument("--n-items", type=int, default=None)
     official.add_argument("--config", type=Path, default=None)
+    analyze_p = sub.add_parser(
+        "analyze", help="Rebuild paired metrics from a frozen store; missing stays missing"
+    )
+    analyze_p.add_argument("--store-dir", type=Path, required=True)
+    analyze_p.add_argument("--homology", type=Path, default=None)
+    analyze_p.add_argument("--n-resamples", type=int, default=1000)
+    analyze_p.add_argument("--seed", type=int, default=42)
+    analyze_p.add_argument("--overlay", action="append", type=Path, default=None)
+    analyze_p.add_argument("--no-overlay", action="store_true")
+    review_p = sub.add_parser(
+        "review-pack", help="Write a blinded 40-item content-review pack"
+    )
+    review_p.add_argument("--store-dir", type=Path, required=True)
+    review_p.add_argument("--out-dir", type=Path, default=None)
+    review_p.add_argument("--overlay", action="append", type=Path, default=None)
+    review_p.add_argument("--no-overlay", action="store_true")
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO)
     if args.cmd == "dry-run":
@@ -902,6 +1211,22 @@ def main(argv: list[str] | None = None) -> int:
                 config_path=args.config,
             )
         parser.error("run-official requires --offline or --paid")
+    if args.cmd == "analyze":
+        return cmd_analyze(
+            store_dir=args.store_dir,
+            homology_path=args.homology,
+            n_resamples=args.n_resamples,
+            seed=args.seed,
+            overlay_dirs=args.overlay,
+            no_overlay=args.no_overlay,
+        )
+    if args.cmd == "review-pack":
+        return cmd_review_pack(
+            store_dir=args.store_dir,
+            out_dir=args.out_dir,
+            overlay_dirs=args.overlay,
+            no_overlay=args.no_overlay,
+        )
     parser.error(f"unknown command {args.cmd}")
     return 2
 

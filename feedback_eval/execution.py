@@ -42,6 +42,29 @@ class _LimitedFake:
         return self.client.generate(messages, settings)
 
 
+class CallCappedClient:
+    """Refuse generate() after `call_cap` this-invocation calls. Not a wallet."""
+
+    def __init__(self, inner: Any, call_cap: int, counter: dict[str, int]):
+        if type(call_cap) is not int or call_cap < 0:
+            raise ValueError("call_cap must be a non-negative integer")
+        self._inner = inner
+        self._call_cap = call_cap
+        self._counter = counter
+
+    def generate(self, messages: list[dict], settings: dict) -> dict:
+        if self._counter["n"] >= self._call_cap:
+            raise BudgetExhausted("call_cap")
+        self._counter["n"] += 1
+        logger.info(
+            "CallCappedClient generate %s/%s model=%s",
+            self._counter["n"],
+            self._call_cap,
+            settings.get("model"),
+        )
+        return self._inner.generate(messages, settings)
+
+
 class BudgetedClient:
     """Refuse generate() when min(cap, wallet) cannot cover a conservative hold."""
 

@@ -701,7 +701,11 @@ def decide_paid_trial(
     """
     if str(env.get("FEEDBACK_EVAL_AUTHORIZE_SPEND") or "") != "1":
         reason = "authorization_missing"
-    elif not (env.get("API_KEY") or env.get("FEEDBACK_EVAL_API_KEY")):
+    elif not (
+        env.get("API_KEY")
+        or env.get("FEEDBACK_EVAL_API_KEY")
+        or env.get("AZURE_OPENAI_API_KEY")
+    ):
         reason = "api_key_missing"
     elif development and int(call_limit or 0) > 0:
         logger.warning(
@@ -717,6 +721,24 @@ def decide_paid_trial(
             "call_limit": int(call_limit),
             "note": (
                 "Historical balance unverified; development stop is call_limit. "
+                "Do not treat prior spend as zero."
+            ),
+        }
+    elif call_cap_is_confirmed(cost_cap):
+        call_cap = int(cost_cap["call_cap"])
+        logger.warning(
+            "Paid run allowed with unverified wallet under call_cap=%s",
+            call_cap,
+        )
+        return {
+            "allowed": True,
+            "reason": None,
+            "balance_status": prior.get("status"),
+            "prior_spent": prior.get("spent"),
+            "prior_balance": prior.get("balance"),
+            "call_cap": call_cap,
+            "note": (
+                "Provider has no wallet endpoint; official stop is call_cap. "
                 "Do not treat prior spend as zero."
             ),
         }
@@ -744,6 +766,20 @@ def _require_freeze_fields(freeze: dict[str, Any]) -> None:
     missing = sorted(_REQUIRED_FREEZE_KEYS - set(freeze))
     if missing:
         raise IncompleteFreezeError(f"incomplete freeze, missing={missing}")
+
+
+def call_cap_is_confirmed(cost_cap: dict[str, Any] | None) -> bool:
+    """True when the official stop is a positive call count, not a wallet."""
+    cap = cost_cap or {}
+    try:
+        call_cap = int(cap.get("call_cap"))
+    except (TypeError, ValueError):
+        return False
+    return (
+        cap.get("status") == "confirmed"
+        and cap.get("unit") == "calls"
+        and call_cap > 0
+    )
 
 
 def _unit_price_is_verified(price: dict[str, Any] | None) -> bool:
@@ -796,7 +832,7 @@ def _price_kwargs_from_freeze(freeze: dict[str, Any]) -> dict[str, Any]:
 
 
 def _ready_for_official_run(config: dict[str, Any], source_hashes: dict[str, Any]) -> bool:
-    """Official runs need verified models, prices, and a numeric cost cap."""
+    """Official runs need verified models plus a money cap or a call cap."""
     models = config.get("models") or []
     models_ok = bool(models) and all(
         model.get("id") and model.get("availability") == "verified" for model in models
@@ -805,14 +841,18 @@ def _ready_for_official_run(config: dict[str, Any], source_hashes: dict[str, Any
         _unit_price_is_verified(model.get("unit_price")) for model in models
     )
     cap = config.get("cost_cap") or {}
+    money_ok = (
+        prices_ok
+        and cap.get("status") == "confirmed"
+        and cap.get("amount") is not None
+    )
+    quota_ok = call_cap_is_confirmed(cap)
     paid = config.get("paid_trial") or {}
     hashes_ok = all(source_hashes.get(key) for key in _SOURCE_HASH_KEYS)
     return bool(
         models_ok
-        and prices_ok
         and hashes_ok
-        and cap.get("status") == "confirmed"
-        and cap.get("amount") is not None
+        and (money_ok or quota_ok)
         and paid.get("allowed") is True
     )
 

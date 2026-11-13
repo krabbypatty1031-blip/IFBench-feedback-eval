@@ -1,0 +1,79 @@
+# Sensitivity rerun of official empty-B0 (model, item) pairs at max_tokens=16384.
+# Separate protocol and store. Do not merge into the 4096 official freeze.
+protocol: feedback-eval-sensitivity-empty-b0-16384-v1
+code_version: store-v1
+paths:
+  data: data/IFBench_test.jsonl
+  split: configs/feedback_eval/split.json
+  prompts: configs/feedback_eval/prompts.json
+  homology: configs/feedback_eval/homology.json
+  constraint_support: configs/feedback_eval/constraint_support.json
+parameters:
+  temperature: 0.0
+  max_tokens: 16384
+  seed: 42
+  thinking:
+    type: disabled
+retry:
+  rate_limit_retries: 1
+  timeout_retries: 0
+  timeout_s: 600.0
+  missing_data_rule: report_missing_do_not_impute
+scoring:
+  primary_metric: strict_prompt_level
+  official_strict: evaluation_lib.test_instruction_following_strict
+  official_loose: evaluation_lib.test_instruction_following_loose
+  loose_is_not_human_judgment: true
+feedback:
+  b2: overall_strict_status
+  b3: per_constraint_strict_plus_prompt_text
+  verifier_error: skip_revision_record_feedback_unavailable
+  mapping_error: skip_revision_record_feedback_unavailable
+human_review:
+  n_items: 40
+  seed: 42
+  split: test
+  blinding: hide_model_and_condition
+cost_cap:
+  amount: null
+  currency: null
+  unit: calls
+  call_cap: 185
+  status: confirmed
+  note: 168 planned outputs (42 empty-B0 pairs x 4 conditions) plus 10 percent headroom. Not the official 4096 freeze.
+budget_planning:
+  # Planning unit is one empty-B0 (model, item) pair, not the 260-item test split.
+  n_test_items: 42
+  n_models: 1
+  n_conditions: 4
+  planned_outputs: 168
+  retry_uplift: 0.1
+  repeatability_outputs: 0
+trial:
+  n_dev_items: 4
+  paid_n_dev_items: 1
+  split: test
+  call_limit: 0
+  require_authorization: true
+  authorization_env: FEEDBACK_EVAL_AUTHORIZE_SPEND
+models:
+  - slot: model_a
+    id: gpt-4.1
+    provider: azure
+    api_base: https://genai.hkbu.edu.hk/general/rest
+    availability: verified
+    unit_price:
+      input_per_million: null
+      output_per_million: null
+      currency: null
+      source: unverified
+  - slot: model_b
+    id: gpt-4o
+    provider: azure
+    api_base: https://genai.hkbu.edu.hk/general/rest
+    availability: verified
+    unit_price:
+      input_per_million: null
+      output_per_million: null
+      currency: null
+      source: unverified

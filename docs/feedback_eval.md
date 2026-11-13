@@ -2,7 +2,7 @@
 
 本文件是日常操作入口（命令、NLTK、产物目录、禁止改动的官方路径）。研究定义与评分口径见 [实验协议](EXPERIMENT_PROTOCOL.md)；阶段验收见 [执行计划](EXPERIMENT_EXECUTION_PLAN.md)；任务拆分见 [实施计划](superpowers/plans/2026-11-12-ifbench-feedback.md)；目录职责见 [结构设计](ARCHITECTURE_PLAN.md)。课程说明 PDF 在 Git 仓库外：`../../Group Project Description.pdf`。
 
-下方 Task 1–6 主要保留历史开发和验收记录，命令和结果应结合对应时间的代码与配置理解；真实开发题输出不作为正式测试结果。当前正式实验是否可运行，以冻结记录、现有运行入口和实际检查为准。
+下方 Task 1–6 主要保留历史开发和验收记录，命令和结果应结合对应时间的代码与配置理解；真实开发题输出不作为正式测试结果。正式生成与量化分析已完成（2026-11-13）；当前进度与数字见文末 Task 7–8 及 [执行计划当前状态](EXPERIMENT_EXECUTION_PLAN.md)。
 
 ## 目录职责
 
@@ -19,10 +19,18 @@
 - 开发探测：`--store-dir runs/feedback_eval/dev`
 - 正式运行：`--store-dir runs/feedback_eval/official`
 
-历史目录**原路径保留**，含真实调用证据，不要搬进 `official/`，也不当作正式测试结果：
+当前正式产物与敏感性重跑、以及历史开发探测均**原路径保留**。开发探测不要搬进 `official/`，也不当作正式测试结果：
 
 | 目录 | 含义 |
 | --- | --- |
+| `runs/feedback_eval/official/` | 正式冻结与 2080 条 4096 原始记录；`analysis.json` 为报告表 |
+| `runs/feedback_eval/official/analysis_4096_only.json` | 未覆盖 16384/32768 的备份表 |
+| `runs/feedback_eval/official/overlay_manifest.json` | 正式表替换了哪些身份 |
+| `runs/feedback_eval/official/review_pack/` | 40 题 × 2 × 4 = 320 条盲审包；标签未填 |
+| `runs/feedback_eval/sensitivity_empty_b0_16384/` | 空 B0 身份的 16384 重跑（168 条） |
+| `runs/feedback_eval/probe_b3_32768/` | gpt-4o item 200 B3 的 32768 探测 |
+| `runs/feedback_eval/probe_empty_b0_8192/` | 空 B0 的 8192 探测 |
+| `runs/feedback_eval/probe_empty_b0_16384/` | 空 B0 的 16384 探测 |
 | `runs/feedback_eval/dev_paid/` | 早期付费入口探测（曾因缺密钥停住） |
 | `runs/feedback_eval/dev_paid_deepseek/` | DeepSeek 1 题开发探测 |
 | `runs/feedback_eval/dev_two_items_20261112/` | 两题离线/配置试跑 |
@@ -285,17 +293,17 @@ pytest 在进程已加载授权环境时，`test_paid_trial_cli_stops_without_ne
 
 篡改已写入的 `freeze.json`（例如改 `prompt_sha256`）后再 `freeze` 同一目录：`FreezeConflictError`，拒绝续跑。无 `freeze.json` 的非空目录也会拒绝接管。
 
-人工审核抽样已按测试集、`seed=42`、`n=40` 写入冻结记录，供 Task 8 使用；盲审本身尚未执行。
+人工审核抽样已按测试集、`seed=42`、`n=40` 写入冻结记录。盲审协议见 [内容审核](feedback_eval_review.md)。
 
 ## Task 7：正式运行与质量检查
 
-正式配置为 `configs/feedback_eval/official.yaml`：协议 `feedback-eval-official-v1`，模型 `deepseek-flash` / `deepseek-v4-pro`，thinking 关闭。钱包为 **CNY 54.24**（USD 余额 0，不用美元上限）。单价按中文价目**高峰缓存未命中**写入冻结：flash 2/8 元每百万 token，pro 9/27 元。本轮成本上限 **40 CNY**。按开发探测 token 粗算约 21 CNY（含 10% 重试），不是实测扣款。
+正式配置为 `configs/feedback_eval/official.yaml`：协议 `feedback-eval-official-hkbu-v1`，模型 `gpt-4.1` / `gpt-4o`，Azure 形状 HKBU GenAI。校园网关没有公开单价和 `/user/balance`，费用金额记为未知；停止条件为 **`call_cap=2288`**（2080 次规划输出加 10% 余量）。不要把先前 DeepSeek 支出当成本次钱包。
 
 ```bash
 NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_eval/test_execution.py tests/feedback_eval/test_budget_guard.py -q
 # 含 rehearsal / summarize / BudgetedClient / run-official CLI
 NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_eval -q
-# 95 passed
+# 2026-11-13：124 passed
 .venv/bin/python -m feedback_eval.cli run-official --offline --n-items 2 --store-dir /tmp/ifbench-official-offline
 # expected=16 actual_calls=16 client=FakeClient
 .venv/bin/python -m feedback_eval.cli trial-dev --paid --n-items 1 --store-dir runs/feedback_eval/dev
@@ -303,4 +311,36 @@ NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python -m pytest tests/feedback_ev
 # 260 × 2 × 4 = 2080；断点可续跑；勿在运行中改 feedback_eval/*.py
 ```
 
-`ready_for_official_run` 在写入 `runs/feedback_eval/prior_balance.json`（`GET /user/balance`）且授权、密钥、确认上限都满足时为 true。历史支出仍为 null，不记成 0；本轮 `spent_this_run` 从 0 起按高峰未命中单价计量。超时会把 `pending_unverified` 记上并停止后续付费调用。
+`ready_for_official_run` 在写入 `runs/feedback_eval/prior_balance.json`（`GET /user/balance`）且授权、密钥、确认上限都满足时为 true。历史支出仍为 null，不记成 0。校园网关无已核验扣款，`spent_this_run.status=unknown`。
+
+正式跑已完成（协议 `feedback-eval-official-hkbu-v1`，`freeze_sha256=a333e677…`）。2080 身份均有记录。4096 账本：success **1891**、empty **53**、error **136**。空 B0 几乎都是 `reasoning_tokens` 吃满 cap、`finish_reason=stop` 但正文为空，随后 B1–B3 因空 assistant 触发 HTTP 400。失败身份已按冻结规则隔离后补跑；内容过滤等仍保持缺失。不要再对 official store 发起新的 2080 次 generate。
+
+## Task 8：分析与盲审
+
+正式**报告表**以模型输出为准，不把 `max_tokens` 当成能力指标。`runs/feedback_eval/official/records/` 仍是冻结的 4096 原始 JSON，不会被覆盖。分析时把 16384 空 B0 重跑和 32768 最后一题 B3 覆盖进失败身份：有正文的记录替换 empty/error；4096 已经成功的身份保持不动。4096-only 备份在 `analysis_4096_only.json`，覆盖清单在 `overlay_manifest.json`。
+
+```bash
+NLTK_DATA="$PWD/ifbench/.nltk_data" PYTHONDONTWRITEBYTECODE=1 \
+  .venv/bin/python -m pytest tests/feedback_eval/test_analysis.py -q
+.venv/bin/python -m feedback_eval.cli analyze --store-dir runs/feedback_eval/official
+.venv/bin/python -m feedback_eval.cli review-pack --store-dir runs/feedback_eval/official
+# 只要 4096 原始表：加 --no-overlay
+```
+
+`analysis.json` 从合并后的身份重建配对 strict/loose、修复/退化与同源组 bootstrap。成功分母不含仍失败的 empty/error/missing。费用保持 unknown。盲审操作见 [内容审核](feedback_eval_review.md)。
+
+覆盖后正式记账：success **2059** / empty **11** / error **10**。四条件齐全：gpt-4.1 **257/260**，gpt-4o **254/260**。覆盖 169 个身份（126 error + 43 empty；其中 gpt-4o item 200 B3 由 32768 补上）。
+
+| | gpt-4.1 strict | gpt-4o strict |
+| --- | --- | --- |
+| B0 | 138/259 = 0.533 | 148/259 = 0.571 |
+| B1 | 146/258 = 0.566 | 157/255 = 0.616 |
+| B2 | 163/258 = **0.632** | 174/258 = **0.674** |
+| B3 | 153/257 = 0.595 | 167/255 = 0.655 |
+| B2−B0 bootstrap | +0.097 [0.051, 0.141] | +0.101 [0.054, 0.153] |
+| 修复 B2 / 退化 B2 | 32/120 / 7/138 | 36/110 / 10/148 |
+
+B1 相对 B0 约 +3%，区间含 0。并进恢复正文后 B0 通过率低于 4096-only，因为原空题进入分母且大多仍不过约束。`tests/feedback_eval`：**124 passed**。
+
+下一步：在 `review_pack/judgments.csv` 填写 320 条标签（填完前不要打开 `key.json`）；然后写报告与 PPT。
+

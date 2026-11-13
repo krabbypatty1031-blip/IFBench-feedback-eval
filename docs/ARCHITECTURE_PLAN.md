@@ -1,10 +1,10 @@
 # IFBench 反馈实验项目结构设计与迁移计划
 
-状态：**轻量整理（阶段 0–2）为本次范围**；阶段 3 起的代码拆分**明确未做**（不拆 `cli.py` / `store.py`，不把学生代码挪出仓库）。研究规则见 [实验协议](EXPERIMENT_PROTOCOL.md)；日常命令见 [运行手册](feedback_eval.md)；阶段验收见 [执行计划](EXPERIMENT_EXECUTION_PLAN.md)。既有 `docs/superpowers/plans/2026-11-12-ifbench-feedback.md` 仍是任务拆分依据。
+状态：轻量整理（阶段 0–2）已做；阶段 3 起的代码拆分**明确未做**（不拆 `cli.py` / `store.py`）。正式生成与量化分析已完成；盲审标签和报告未完成。研究规则见 [实验协议](EXPERIMENT_PROTOCOL.md)；日常命令见 [运行手册](feedback_eval.md)；阶段验收见 [执行计划](EXPERIMENT_EXECUTION_PLAN.md)。既有 `docs/superpowers/plans/2026-11-12-ifbench-feedback.md` 仍是任务拆分依据。
 
 ## 目标
 
-使官方 IFBench、项目新增的反馈实验、配置、结果及文档的职责清楚，并保留官方评分口径、实验可复现性与已有记录。结构调整本身不改变研究问题、实验条件、样本或模型，也不意味着正式试验已完成。
+使官方 IFBench、项目新增的反馈实验、配置、结果及文档的职责清楚，并保留官方评分口径、实验可复现性与已有记录。结构调整本身不改变研究问题、实验条件、样本或模型。正式试验的运行与分析进度见执行计划，不以本文替代。
 
 ## 当前结构与事实
 
@@ -13,14 +13,14 @@
 | `ifbench/` | 上游验证器和打包数据 | 实验的 `feedback_eval/feedback.py` 直接导入 registry；NLTK 资源需要可访问路径 |
 | `evaluation_lib.py`, `run_eval.py`, `generate_responses.py`, `config.py` | 上游评分、运行与配置 | `feedback_eval/scoring.py` 直接导入根目录的 `evaluation_lib`，不能单独移动 |
 | `data/IFBench_test.jsonl`, `ifbench/data/IFBench_test.jsonl` | 上游两份数据 | 两份各 300 条，但 ID 13 和 19 的提示词末尾空格不同；实验固定使用前者的原始字节及哈希 |
-| `feedback_eval/` | 项目新增实验代码 | `cli.py` 包含数据、试跑、冻结及运行入口；`store.py` 同时承担记录、预算、配置解析与冻结等职责 |
-| `configs/feedback_eval/` | 划分、提示词、开发和正式配置 | 多处代码和冻结记录引用具体路径及哈希；`official.yaml` 当前为未跟踪文件 |
-| `tests/feedback_eval/` | 离线测试 | 隔离环境及网络的 `conftest.py` 当前未跟踪；应避免测试加载真实密钥 |
-| `runs/feedback_eval/` | 开发探测、结果和账本 | Git 忽略；含实际调用证据，历史账本与冻结记录不得删除或覆盖 |
+| `feedback_eval/` | 项目新增实验代码 | `cli.py` 含冻结、运行、`analyze` / `review-pack`；`analysis.py` 做配对表与盲审包；`store.py` 仍兼记录与预算 |
+| `configs/feedback_eval/` | 划分、提示词、开发/正式/敏感性配置 | `official.yaml`、`split.json`、`homology.json` 已纳入版本控制 |
+| `tests/feedback_eval/` | 离线测试 | `conftest.py` 隔离 `.env` 并拒绝测试套件打开 HTTP；2026-11-13 为 124 passed |
+| `runs/feedback_eval/` | 正式结果、敏感性重跑、开发探测和账本 | Git 忽略；含 2080 条 4096 记录；不得删除或覆盖冻结 `records/` |
 | `docs/EXPERIMENT_PROTOCOL.md`, `docs/EXPERIMENT_EXECUTION_PLAN.md`, `docs/feedback_eval.md`, `docs/superpowers/` | 协议、计划与运行记录 | 内容跨多个入口，部分状态和命令可能随代码变化而过时 |
 | `.coverage`, `__pycache__/`, `eval/` | 上游仓库已跟踪的缓存和示例评分 | 不能仅依靠 `.gitignore` 清除已跟踪文件；`eval/` 可能是上游示例，应先确认再调整 |
 
-上游基线提交 `cd189a9c2889526d8af901d2103fd3e1ffcea6df` 已包含上述 `.coverage`、字节码、两份数据和 `eval` 示例。当前远程 `origin` 指向官方仓库；现有 `comp4136-feedback-eval` 分支有未提交及未跟踪修改。不要假设该远程是用户自己的仓库，也不要推送。
+上游基线提交 `cd189a9c2889526d8af901d2103fd3e1ffcea6df` 已包含上述 `.coverage`、字节码、两份数据和 `eval` 示例。当前 `origin` 为课程仓库 `https://github.com/krabbypatty1031-blip/IFBench-feedback-eval.git`；`upstream` 为 AllenAI 只读。工作分支 `comp4136-feedback-eval`。未经用户要求不要提交或推送。
 
 ## 建议的目标结构
 
@@ -39,6 +39,7 @@ IFBench/
 ├── tests/feedback_eval/         本项目的离线单测与集成测试
 ├── docs/
 │   ├── feedback_eval.md              运行入口与复现命令
+│   ├── feedback_eval_review.md       盲审协议
 │   ├── EXPERIMENT_PROTOCOL.md        研究协议与评分定义
 │   ├── EXPERIMENT_EXECUTION_PLAN.md  阶段交付与验收
 │   ├── ARCHITECTURE_PLAN.md          本设计与迁移记录
@@ -118,4 +119,4 @@ flowchart TD
 
 本次轻量整理只做阶段 0–2（文档入口、目录约定、忽略规则）。阶段 3–5 的代码拆分、冻结重做和最终核验另行决定。正式配置中的模型、费用上限、单价和余额属于实验运行状态；本文不验证其真实性或重新设定预算。
 
-截至当前阶段，没有正在运行的正式任务。未移动官方评分路径或 `feedback_eval/*.py`。实验协议与执行计划已从仓库根目录移入 `docs/`；历史试跑目录保持原路径；旧冻结不得改哈希。阶段 3 未做：`cli.py` 与 `store.py` 仍承担多职责。
+截至 2026-11-13：正式 generate 已结束，量化表与盲审包已写出，没有正在运行的模型任务。未移动官方评分路径。旧冻结 `a333e677…` 不得改哈希；之后改 `feedback_eval/*.py` 只影响未来新冻结。阶段 3 未做：`cli.py` 与 `store.py` 仍承担多职责。`analysis.py` 已加入，不回溯改 4096 `records/`。

@@ -6,7 +6,13 @@ import pytest
 
 from feedback_eval.cli import main
 from feedback_eval.client import FakeClient, OpenAICompatClient
-from feedback_eval.execution import BudgetExhausted, BudgetedClient, rehearse, summarize
+from feedback_eval.execution import (
+    BudgetExhausted,
+    BudgetedClient,
+    CallCappedClient,
+    rehearse,
+    summarize,
+)
 from feedback_eval.runner import synthetic_conjunction_item
 from feedback_eval.store import RunStore, inspect_prior_ledger
 
@@ -152,23 +158,24 @@ def test_paid_official_cli_blocked_without_auth(
     assert not list(tmp_path.glob("records/*.json"))
 
 
+def test_call_capped_client_stops_at_limit() -> None:
+    inner = FakeClient([ok(), ok(), ok()])
+    counter = {"n": 0}
+    client = CallCappedClient(inner, 2, counter)
+    client.generate([{"role": "user", "content": "a"}], {"model": "gpt-4.1"})
+    client.generate([{"role": "user", "content": "b"}], {"model": "gpt-4.1"})
+    with pytest.raises(BudgetExhausted, match="call_cap"):
+        client.generate([{"role": "user", "content": "c"}], {"model": "gpt-4.1"})
+    assert len(inner.calls) == 2
+
+
 def test_paid_official_cli_uses_injected_client(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    prior = {
-        "status": "ok",
-        "spent": None,
-        "balance": 54.24,
-        "currency": "CNY",
-        "paths": [],
-        "unit_prices": None,
-    }
     monkeypatch.setenv("FEEDBACK_EVAL_AUTHORIZE_SPEND", "1")
     monkeypatch.setenv("API_KEY", "secret-key")
-    monkeypatch.setattr("feedback_eval.cli._refresh_prior_wallet", lambda *a, **k: prior)
-    monkeypatch.setattr("feedback_eval.cli.inspect_prior_ledger", lambda paths: prior)
 
     def fake_generate(self: OpenAICompatClient, messages: list[dict], settings: dict) -> dict:
         assert "secret-key" not in str(messages)
@@ -188,7 +195,7 @@ def test_paid_official_cli_uses_injected_client(
     captured = capsys.readouterr().out
     assert "secret-key" not in captured
     assert code == 0
-    assert "client=OpenAICompatClient" in captured
+    assert "client=AzureOpenAIClient" in captured
     assert "expected=8" in captured
     assert "actual_calls=8" in captured
     dumped = "".join(path.read_text(encoding="utf-8") for path in tmp_path.rglob("*.json"))

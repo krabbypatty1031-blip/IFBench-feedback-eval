@@ -205,22 +205,22 @@ def test_development_yaml_declares_two_unverified_candidates() -> None:
     assert raw["parameters"]["thinking"] == {"type": "disabled"}
 
 
-def test_official_yaml_declares_verified_cny_tariff() -> None:
+def test_official_yaml_declares_hkbu_call_cap() -> None:
     raw = load_mapping_yaml(_REPO_ROOT / "configs" / "feedback_eval" / "official.yaml")
-    assert raw["protocol"] == "feedback-eval-official-v1"
+    assert raw["protocol"] == "feedback-eval-official-hkbu-v1"
     assert raw["budget_planning"]["planned_outputs"] == 2080
-    assert raw["cost_cap"]["currency"] == "CNY"
+    assert raw["cost_cap"]["unit"] == "calls"
     assert raw["cost_cap"]["status"] == "confirmed"
-    assert raw["cost_cap"]["amount"] == 40.0
+    assert raw["cost_cap"]["call_cap"] == 2288
+    assert raw["cost_cap"]["amount"] is None
     assert raw["parameters"]["thinking"] == {"type": "disabled"}
     ids = {model["id"] for model in raw["models"]}
-    assert ids == {"deepseek-flash", "deepseek-v4-pro"}
+    assert ids == {"gpt-4.1", "gpt-4o"}
     for model in raw["models"]:
         assert model["availability"] == "verified"
-        assert model["unit_price"]["source"] == "verified"
-        assert model["unit_price"]["currency"] == "CNY"
-        assert model["unit_price"]["input_per_million"] is not None
-        assert model["unit_price"]["output_per_million"] is not None
+        assert model["provider"] == "azure"
+        assert model["api_base"] == "https://genai.hkbu.edu.hk/general/rest"
+        assert model["unit_price"]["source"] == "unverified"
 
 
 def test_build_freeze_pins_hashes_and_is_stable() -> None:
@@ -273,6 +273,53 @@ def test_ready_for_official_run_requires_input_and_output_prices() -> None:
     missing_input["models"] = copy.deepcopy(missing_input["models"])
     missing_input["models"][0]["unit_price"]["input_per_million"] = None
     assert build_freeze(missing_input, hashes)["ready_for_official_run"] is False
+
+
+def test_ready_for_official_run_accepts_confirmed_call_cap_without_prices() -> None:
+    """HKBU GenAI has no published CNY tariff; a confirmed call cap is the stop."""
+    hashes = _hashes()
+    config = _config(
+        models=[
+            {
+                "slot": "model_a",
+                "id": "gpt-4.1",
+                "api_base": "https://genai.hkbu.edu.hk/general/rest",
+                "provider": "azure",
+                "availability": "verified",
+                "unit_price": {
+                    "input_per_million": None,
+                    "output_per_million": None,
+                    "currency": None,
+                    "source": "unverified",
+                },
+            },
+            {
+                "slot": "model_b",
+                "id": "gpt-4o",
+                "api_base": "https://genai.hkbu.edu.hk/general/rest",
+                "provider": "azure",
+                "availability": "verified",
+                "unit_price": {
+                    "input_per_million": None,
+                    "output_per_million": None,
+                    "currency": None,
+                    "source": "unverified",
+                },
+            },
+        ],
+        cost_cap={
+            "amount": None,
+            "currency": None,
+            "unit": "calls",
+            "call_cap": 2288,
+            "status": "confirmed",
+        },
+        paid_trial={"allowed": True, "reason": None},
+    )
+    freeze = build_freeze(config, hashes)
+    assert freeze["ready_for_official_run"] is True
+    config["cost_cap"]["call_cap"] = 0
+    assert build_freeze(config, hashes)["ready_for_official_run"] is False
 
 
 def test_validate_resume_accepts_identical_freeze() -> None:
@@ -460,6 +507,23 @@ def test_paid_trial_blocked_without_authorization_key_or_balance() -> None:
     assert allowed_dev["allowed"] is True
     assert allowed_dev["prior_spent"] is None
     assert allowed_dev["call_limit"] == 16
+    allowed_calls = decide_paid_trial(
+        {
+            "FEEDBACK_EVAL_AUTHORIZE_SPEND": "1",
+            "API_KEY": "secret-key",
+        },
+        prior,
+        {
+            "amount": None,
+            "currency": None,
+            "unit": "calls",
+            "call_cap": 2288,
+            "status": "confirmed",
+        },
+    )
+    assert allowed_calls["allowed"] is True
+    assert allowed_calls["call_cap"] == 2288
+    assert allowed_calls["prior_spent"] is None
 
 
 def test_paid_trial_cli_stops_without_network(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

@@ -1,8 +1,7 @@
 # Official freeze inputs. No secrets.
-# Peak cache-miss CNY tariff from
-# https://api-docs.deepseek.com/zh-cn/quick_start/pricing (retrieved 2026-11-12).
-# Wallet is CNY; USD balance is 0 and must not be used as the cap currency.
-protocol: feedback-eval-official-v1
+# HKBU GenAI has no published CNY tariff and no /user/balance.
+# The official stop is call_cap; do not treat prior DeepSeek spend as this wallet.
+protocol: feedback-eval-official-hkbu-v1
 code_version: store-v1
 paths:
   data: data/IFBench_test.jsonl
@@ -37,10 +36,12 @@ human_review:
   split: test
   blinding: hide_model_and_condition
 cost_cap:
-  amount: 40.0
-  currency: CNY
+  amount: null
+  currency: null
+  unit: calls
+  call_cap: 2288
   status: confirmed
-  note: Live wallet was 54.24 CNY; cap leaves headroom and is this-run only.
+  note: 2080 planned outputs plus 10 percent retry headroom. Campus quota is not a CNY wallet.
 budget_planning:
   n_test_items: 260
   n_models: 2
@@ -57,22 +58,22 @@ trial:
   authorization_env: FEEDBACK_EVAL_AUTHORIZE_SPEND
 models:
   - slot: model_a
-    id: deepseek-flash
-    api_base: https://api.deepseek.com/v1
+    id: gpt-4.1
+    provider: azure
+    api_base: https://genai.hkbu.edu.hk/general/rest
     availability: verified
     unit_price:
-      input_per_million: 2.0
-      output_per_million: 8.0
-      currency: CNY
-      source: verified
-      tariff: peak_cache_miss
+      input_per_million: null
+      output_per_million: null
+      currency: null
+      source: unverified
   - slot: model_b
-    id: deepseek-v4-pro
-    api_base: https://api.deepseek.com/v1
+    id: gpt-4o
+    provider: azure
+    api_base: https://genai.hkbu.edu.hk/general/rest
     availability: verified
     unit_price:
-      input_per_million: 9.0
-      output_per_million: 27.0
-      currency: CNY
-      source: verified
-      tariff: peak_cache_miss
+      input_per_million: null
+      output_per_million: null
+      currency: null
+      source: unverified
