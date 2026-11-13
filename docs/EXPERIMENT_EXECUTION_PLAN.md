@@ -1,6 +1,6 @@
 # IFBench 反馈修订实验执行计划
 
-状态：**正式运行已完成；量化表已重建；盲审标签未填；报告与 PPT 未开始。** 本文编号：正式运行=Task 8，量化分析=Task 9，报告=Task 10。研究规则见 [实验协议](EXPERIMENT_PROTOCOL.md)；如何运行见 [运行手册](feedback_eval.md)；目录职责见 [结构设计](ARCHITECTURE_PLAN.md)。如本计划与协议冲突，以协议为准。
+状态：**正式运行已完成；量化表已重建；320 条盲审已标注；报告与 PPT 未开始。** 本文编号：正式运行=Task 8，量化分析=Task 9，报告=Task 10。研究规则见 [实验协议](EXPERIMENT_PROTOCOL.md)；如何运行见 [运行手册](feedback_eval.md)；目录职责见 [结构设计](ARCHITECTURE_PLAN.md)。如本计划与协议冲突，以协议为准。
 
 编号说明：本文 Task 8/9/10 对应实施计划里的 Task 7/8/9。命令与数字以运行手册为准。
 
@@ -64,7 +64,7 @@
 - 严格提示级通过率为主指标；报告 strict/loose 的提示级和约束级结果、修复率与退化率的分子分母、覆盖与缺失、成本和延迟。按相同题目配对，以题目或已识别同源组重采样计算差异区间；类别及单/双约束分析标记探索性。
 - 正式运行前固定审核抽样规则和种子：约 40 道题，覆盖模型与全部条件，隐藏身份、打乱顺序；依据原任务标记完成、部分完成、未完成或无法判断，保留审核记录和分歧。仅一名审核者时披露限制。
 - 验收：统计可以从原始记录重新生成；图表标示分母和缺失；规则得分、内容质量与模型加验证器成本分开解释。
-- **完成情况：** `analysis.json` 已从记录重建（正式表覆盖 16384/32768 恢复正文）。320 条盲审包已生成；`judgments.csv` 未填。
+- **完成情况：** `analysis.json` 已从记录重建（正式表覆盖 16384/32768 恢复正文）。320 条盲审已写入 `judgments.csv`：complete 311 / partial 8 / incomplete 1；单人代理标注，见 [内容审核](feedback_eval_review.md)。
 
 ### Task 10：报告与展示
 
@@ -84,7 +84,7 @@
 | Task 1–7（环境、划分、验证器、客户端、B0–B3、开发试跑、冻结） | 完成 |
 | Task 8 正式运行 | 完成：260×2×4=2080 均有记录 |
 | Task 9 量化分析 | 表已从原始记录重建；正式报告表覆盖 16384/32768 已恢复正文 |
-| Task 9 人工审核 | 320 条盲审包已写入 `review_pack/`，`judgments.csv` 标签为 0 |
+| Task 9 人工审核 | 320/320 已标注（311/8/1/0）；单人代理，非独立人类评分 |
 | Task 10 报告与 PPT | 未开始 |
 
 冻结：协议 `feedback-eval-official-hkbu-v1`，`freeze_sha256=a333e67751168bfbe5c41e352d6aff216ef0272fc0684d40ff2f4be134a1aa84`，参数 `max_tokens=4096`、`temperature=0`、`seed=42`。原始 JSON 在 `runs/feedback_eval/official/records/`，不改写。
@@ -93,4 +93,4 @@
 
 报告主结果（strict 提示级）：B0 53.3% / 57.1%；B2 63.2% / 67.4%。B2 相对 B0 约 +10 个百分点，bootstrap 区间不含 0。B1 提升约 +3%，区间含 0。B3 有效但弱于 B2。费用 unknown。离线测试 `tests/feedback_eval` 124 passed。
 
-下一步：填写盲审 `judgments.csv`（填完前不要打开 `key.json`）；写报告与 PPT。详细命令与分母见 [运行手册 Task 8](feedback_eval.md)。
+下一步：写报告与 PPT。盲审数字见 [内容审核](feedback_eval_review.md)；命令与分母见 [运行手册 Task 8](feedback_eval.md)。

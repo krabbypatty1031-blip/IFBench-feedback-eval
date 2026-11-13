@@ -5,9 +5,9 @@
 > [experiment protocol](docs/EXPERIMENT_PROTOCOL.md),
 > [execution plan](docs/EXPERIMENT_EXECUTION_PLAN.md), and
 > [architecture plan](docs/ARCHITECTURE_PLAN.md).
-> Official HKBU generate and quantitative tables are done (2026-11-13);
-> the 320-item blinded review pack is waiting for labels; the report/PPT
-> is not started. The course brief PDF is outside this Git tree
+> Official HKBU generate, quantitative tables, and the 320-item blinded
+> review labels are done (2026-11-13); the report/PPT is not started.
+> The course brief PDF is outside this Git tree
 > (`../Group Project Description.pdf`).
 
 **Layout (official scoring paths are not moved):** official IFBench stays at `ifbench/`, `evaluation_lib.py`, `run_eval.py`, `generate_responses.py`, root `config.py`, `data/`, `eval/`, and `instructions_test.py`. The course experiment is `feedback_eval/`, `configs/feedback_eval/`, `tests/feedback_eval/`, and `docs/` (protocol, execution plan, run handbook). Local-only: `.env`, `.venv/`, `runs/feedback_eval/`, NLTK data.

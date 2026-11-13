@@ -26,7 +26,7 @@
 | `runs/feedback_eval/official/` | 正式冻结与 2080 条 4096 原始记录；`analysis.json` 为报告表 |
 | `runs/feedback_eval/official/analysis_4096_only.json` | 未覆盖 16384/32768 的备份表 |
 | `runs/feedback_eval/official/overlay_manifest.json` | 正式表替换了哪些身份 |
-| `runs/feedback_eval/official/review_pack/` | 40 题 × 2 × 4 = 320 条盲审包；标签未填 |
+| `runs/feedback_eval/official/review_pack/` | 40 题 × 2 × 4 = 320 条盲审包；`judgments.csv` 已填 |
 | `runs/feedback_eval/sensitivity_empty_b0_16384/` | 空 B0 身份的 16384 重跑（168 条） |
 | `runs/feedback_eval/probe_b3_32768/` | gpt-4o item 200 B3 的 32768 探测 |
 | `runs/feedback_eval/probe_empty_b0_8192/` | 空 B0 的 8192 探测 |
@@ -342,5 +342,7 @@ NLTK_DATA="$PWD/ifbench/.nltk_data" PYTHONDONTWRITEBYTECODE=1 \
 
 B1 相对 B0 约 +3%，区间含 0。并进恢复正文后 B0 通过率低于 4096-only，因为原空题进入分母且大多仍不过约束。`tests/feedback_eval`：**124 passed**。
 
-下一步：在 `review_pack/judgments.csv` 填写 320 条标签（填完前不要打开 `key.json`）；然后写报告与 PPT。
+盲审（原任务完成度，非约束）：320/320 已标注，`complete` 311 / `partial` 8 / `incomplete` 1 / `cannot_judge` 0。8 条 partial 全是 item 247（Baudrillard）；1 条 incomplete 是 gpt-4.1 item 159 B3 的验证器回声。内容完成率在 B0 已接近天花板，反馈几乎不改原任务完成；311 条 `complete` 中仍有 82 条 strict 失败。详情见 [内容审核](feedback_eval_review.md)。
+
+下一步：写报告与 PPT。
 

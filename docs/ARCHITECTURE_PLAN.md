@@ -1,6 +1,6 @@
 # IFBench 反馈实验项目结构设计与迁移计划
 
-状态：轻量整理（阶段 0–2）已做；阶段 3 起的代码拆分**明确未做**（不拆 `cli.py` / `store.py`）。正式生成与量化分析已完成；盲审标签和报告未完成。研究规则见 [实验协议](EXPERIMENT_PROTOCOL.md)；日常命令见 [运行手册](feedback_eval.md)；阶段验收见 [执行计划](EXPERIMENT_EXECUTION_PLAN.md)。既有 `docs/superpowers/plans/2026-11-12-ifbench-feedback.md` 仍是任务拆分依据。
+状态：轻量整理（阶段 0–2）已做；阶段 3 起的代码拆分**明确未做**（不拆 `cli.py` / `store.py`）。正式生成、量化分析与 320 条盲审已完成；报告未完成。研究规则见 [实验协议](EXPERIMENT_PROTOCOL.md)；日常命令见 [运行手册](feedback_eval.md)；阶段验收见 [执行计划](EXPERIMENT_EXECUTION_PLAN.md)。既有 `docs/superpowers/plans/2026-11-12-ifbench-feedback.md` 仍是任务拆分依据。
 
 ## 目标
 
@@ -119,4 +119,4 @@ flowchart TD
 
 本次轻量整理只做阶段 0–2（文档入口、目录约定、忽略规则）。阶段 3–5 的代码拆分、冻结重做和最终核验另行决定。正式配置中的模型、费用上限、单价和余额属于实验运行状态；本文不验证其真实性或重新设定预算。
 
-截至 2026-11-13：正式 generate 已结束，量化表与盲审包已写出，没有正在运行的模型任务。未移动官方评分路径。旧冻结 `a333e677…` 不得改哈希；之后改 `feedback_eval/*.py` 只影响未来新冻结。阶段 3 未做：`cli.py` 与 `store.py` 仍承担多职责。`analysis.py` 已加入，不回溯改 4096 `records/`。
+截至 2026-11-13：正式 generate 已结束，量化表与 320 条盲审标签已写出，没有正在运行的模型任务。未移动官方评分路径。旧冻结 `a333e677…` 不得改哈希；之后改 `feedback_eval/*.py` 只影响未来新冻结。阶段 3 未做：`cli.py` 与 `store.py` 仍承担多职责。`analysis.py` 已加入，不回溯改 4096 `records/`。
