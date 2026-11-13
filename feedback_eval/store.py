@@ -708,27 +708,27 @@ def decide_paid_trial(
     ):
         reason = "api_key_missing"
     elif development:
-        # Dev trials must not fall through to official call_cap: LimitedClient
-        # treats 0 as already exhausted and would block the first generate.
+        # Return here so this branch cannot be read as falling into call_cap.
+        # LimitedClient treats 0 as already exhausted.
         if int(call_limit or 0) <= 0:
-            reason = "call_limit_missing"
-        else:
-            logger.warning(
-                "Development trial allowed with unverified balance under call_limit=%s",
-                call_limit,
-            )
-            return {
-                "allowed": True,
-                "reason": None,
-                "balance_status": prior.get("status"),
-                "prior_spent": prior.get("spent"),
-                "prior_balance": prior.get("balance"),
-                "call_limit": int(call_limit),
-                "note": (
-                    "Historical balance unverified; development stop is call_limit. "
-                    "Do not treat prior spend as zero."
-                ),
-            }
+            logger.warning("Paid trial blocked: call_limit_missing")
+            return {"allowed": False, "reason": "call_limit_missing"}
+        logger.warning(
+            "Development trial allowed with unverified balance under call_limit=%s",
+            call_limit,
+        )
+        return {
+            "allowed": True,
+            "reason": None,
+            "balance_status": prior.get("status"),
+            "prior_spent": prior.get("spent"),
+            "prior_balance": prior.get("balance"),
+            "call_limit": int(call_limit),
+            "note": (
+                "Historical balance unverified; development stop is call_limit. "
+                "Do not treat prior spend as zero."
+            ),
+        }
     elif call_cap_is_confirmed(cost_cap):
         call_cap = int(cost_cap["call_cap"])
         logger.warning(
