@@ -4,6 +4,7 @@
 .nltk_data/
 .pytest_cache/
 .coverage.*
+.planning/
 
 # Python
 __pycache__/
