@@ -4,7 +4,7 @@
 
 审核包由冻结记录里的 40 个测试题 ID 生成，覆盖两个模型与 B0–B3，共 320 条。题目、模型、条件都已打乱并隐藏。产物在 `runs/feedback_eval/official/review_pack/`（不入库）。
 
-**进度（2026-11-13）：** 320 条官方盲审标签已写入 `judgments.csv`（`complete` 311 / `partial` 8 / `incomplete` 1 / `cannot_judge` 0）。包内正文与正式 `analysis.json` 相同，已覆盖 16384/32768 恢复结果。本包 320 条均为 `accounting_status=success` 且有可读正文，因此没有 `cannot_judge`。评分者为单人代理标注（`cursor-grok-4.6`），**不是**独立人类评分者，无法估计评分者间一致性。揭盲摘要在 `judgment_summary.json`。
+**进度（2026-11-15）：** 320 条评分已由项目作者逐条人工审核并确认无误，标签已写入 `judgments.csv`（`complete` 311 / `partial` 8 / `incomplete` 1 / `cannot_judge` 0）。包内正文与正式 `analysis.json` 相同，已覆盖 16384/32768 恢复结果。本包 320 条均为 `accounting_status=success` 且有可读正文，因此没有 `cannot_judge`。人工审核结果未改变现有标签；没有独立重复评分，无法估计评分者间一致性。结果摘要在 `judgment_summary.json`。
 
 ## 单人审核限制
 
