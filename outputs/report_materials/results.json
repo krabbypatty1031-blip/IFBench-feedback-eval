@@ -2184,35 +2184,46 @@
   ],
   "content_by_condition": {
     "B1": {
-      "complete": 78,
-      "partial": 2
+      "complete": 508,
+      "partial": 2,
+      "incomplete": 3,
+      "cannot_judge": 7
     },
     "B2": {
-      "complete": 78,
-      "partial": 2
+      "complete": 510,
+      "partial": 3,
+      "incomplete": 3,
+      "cannot_judge": 4
     },
     "B0": {
-      "complete": 78,
-      "partial": 2
+      "complete": 512,
+      "partial": 2,
+      "incomplete": 4,
+      "cannot_judge": 2
     },
     "B3": {
-      "complete": 77,
-      "incomplete": 1,
-      "partial": 2
+      "complete": 503,
+      "incomplete": 7,
+      "partial": 2,
+      "cannot_judge": 8
     }
   },
   "content_vs_strict": {
     "complete": {
-      "strict_fail": 82,
-      "strict_pass": 229
+      "strict_fail": 806,
+      "strict_pass": 1227
     },
     "partial": {
-      "strict_pass": 6,
+      "strict_pass": 7,
       "strict_fail": 2
     },
     "incomplete": {
-      "strict_fail": 1
+      "strict_fail": 5,
+      "strict_pass": 12
+    },
+    "cannot_judge": {
+      "no_score": 21
     }
   },
-  "review_scope": "40 items, 2 models, 4 conditions; all 320 labels confirmed by project author."
+  "review_scope": "260 test items, 2 models, 4 conditions; 2080 single-rater content labels covering the full test set."
 }

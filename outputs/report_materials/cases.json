@@ -17,7 +17,7 @@
           ]
         },
         "feedback": null,
-        "human_confirmed_content_label": null,
+        "human_confirmed_content_label": "complete",
         "source_paths": [
           "runs/feedback_eval/official/records/5990d27afbd6fd9bfccc751b06d408bba6409429da8039f355b3a7c56df4170c.json"
         ]
@@ -33,7 +33,7 @@
           ]
         },
         "feedback": null,
-        "human_confirmed_content_label": null,
+        "human_confirmed_content_label": "complete",
         "source_paths": [
           "runs/feedback_eval/official/records/fb702dc79e84f6764f403a5412084e033a1a6477335817d07508da924a346035.json"
         ]
@@ -49,7 +49,7 @@
           ]
         },
         "feedback": "Verifier (strict): FAILED. At least one output constraint was not satisfied.",
-        "human_confirmed_content_label": null,
+        "human_confirmed_content_label": "complete",
         "source_paths": [
           "runs/feedback_eval/official/records/ff2d09d5e19c928e72a96fbefe17df813491fcce7788f239ac58b535ea3159f0.json"
         ]
@@ -65,7 +65,7 @@
           ]
         },
         "feedback": "Verifier (strict), one line per constraint, in listed order:\n1. FAIL: Ensure that stop words constitute no more than 20% of the total words in your response.",
-        "human_confirmed_content_label": null,
+        "human_confirmed_content_label": "complete",
         "source_paths": [
           "runs/feedback_eval/official/records/b1477a31fdac30a9cef870cc305683357c9413a256bf11748fc4fdd7a1e97b9f.json"
         ]
@@ -241,7 +241,7 @@
           ]
         },
         "feedback": null,
-        "human_confirmed_content_label": null,
+        "human_confirmed_content_label": "complete",
         "source_paths": [
           "runs/feedback_eval/official/records/03fe530067ca9e7a7df2d8da903861b91a2f7153233ec4c72b44805fa95eb2ac.json"
         ]
@@ -258,7 +258,7 @@
           ]
         },
         "feedback": null,
-        "human_confirmed_content_label": null,
+        "human_confirmed_content_label": "complete",
         "source_paths": [
           "runs/feedback_eval/official/records/df9a297b5cfe95d1cd5dc1bb7c9a1ee920abf25c1e573c36ce7781d2a748e14d.json"
         ]
@@ -275,7 +275,7 @@
           ]
         },
         "feedback": "Verifier (strict): FAILED. At least one output constraint was not satisfied.",
-        "human_confirmed_content_label": null,
+        "human_confirmed_content_label": "complete",
         "source_paths": [
           "runs/feedback_eval/official/records/3244a568e5fcc6347c40fac61abdbd42c89dc03cf892e0f46ca12f62357a4f77.json"
         ]
@@ -292,7 +292,7 @@
           ]
         },
         "feedback": "Verifier (strict), one line per constraint, in listed order:\n1. FAIL: Include quotes within quotes within quotes, at least 3 levels deep, alternating between double quotes and single quotes.\n2. PASS: Please use an emoji at the end of every sentence.",
-        "human_confirmed_content_label": null,
+        "human_confirmed_content_label": "complete",
         "source_paths": [
           "runs/feedback_eval/official/records/deacd07698d26e70e2a8e4f0ab1305d6066f66cc8227e3f17f9e6bb0c510e94d.json"
         ]

@@ -1,0 +1,16 @@
+\frametitle{Real cases: B1 breaks a passing answer, B2 repairs a failed one}
+\textbf{gpt-4o, item 296: no whitespace allowed}\par\smallskip
+  \begin{tabular}{@{}ll@{}}
+    Prompt & \lstinline!...are all sets classes? The output should not contain any whitespace.! \\
+    \Bz{} PASS & \lstinline!Yes—ineverydayclass-theoreticusage,everysetisaclass;someclassesarenotsets.! \\
+    \Bo{} FAIL & \lstinline!Inclass theories suchasNBG,everysetisaclass,butnot everyclassisaset.! \\
+    \Bt{} PASS & \lstinline!Yes:everysetisaclass,butnotallclassesaresets.! \\
+  \end{tabular}
+  \vspace{1.2em}
+
+  \textbf{gpt-4.1, item 173: stop words at most 20\%}\par\smallskip
+  \begin{tabular}{@{}ll@{}}
+    Prompt & \lstinline!...Ensure that stop words constitute no more than 20% of the total words...! \\
+    \Bz{} FAIL & \lstinline!No. Let \(B_n(x)=x^n\). For each \(x<1\), \(B_n(x)\to0\), ...! \\
+    \Bt{} PASS & \lstinline!No. Choose \(B_n(x)=x^n\). Pointwise limit: \(f(x)=0\) for \(x<1\), ...! \\
+  \end{tabular}

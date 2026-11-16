@@ -13,7 +13,7 @@
 | gpt-4.1 | 138/259 (53.3%) | 146/258 (56.6%) | 163/258 (63.2%) | 153/257 (59.5%) |
 | gpt-4o | 148/259 (57.1%) | 157/255 (61.6%) | 174/258 (67.4%) | 167/255 (65.5%) |
 
-B2 相对 B0 的同题配对提升分别为 **9.69** 和 **10.08 个百分点**。内容审核覆盖 40 道题、两个模型和四种条件，共 320 条回答：311 条 complete、8 条 partial、1 条 incomplete。完整表格及分母见[结果表](outputs/report_materials/RESULTS_TABLES.md)，具体回答见[案例](outputs/report_materials/CASE_STUDIES.md)。
+B2 相对 B0 的同题配对提升分别为 **9.69** 和 **10.08 个百分点**。内容审核覆盖全部 260 道测试题、两个模型和四种条件，共 2080 条回答：2033 条 complete、9 条 partial、17 条 incomplete、21 条 cannot_judge。完整表格及分母见[结果表](outputs/report_materials/RESULTS_TABLES.md)，具体回答见[案例](outputs/report_materials/CASE_STUDIES.md)。
 
 - 报告：**TODO：报告尚未生成，完成后添加链接。**
 - PPT：**TODO：PPT 尚未生成，完成后添加链接。**
@@ -117,7 +117,7 @@ export PYTHONDONTWRITEBYTECODE=1
 
    `analyze` 会覆盖目标目录中的分析文件；该命令依赖第 2、3 步产生的记录，未对新付费运行执行验证。
 
-5. **内容审核**。冻结记录包含抽样 ID。对新的运行目录生成审核包：输入为记录及冻结配置；输出为 `review_pack/blinded.json`、`key.json` 和 `judgments.csv`；API 费用：0。
+5. **内容审核**。现行协议覆盖测试集全部 260 题。对新的运行目录生成审核包：输入为记录及冻结配置；输出为 `review_pack/blinded.json`、`key.json` 和 `judgments.csv`；API 费用：0。本仓库正式结果使用全量 2080 条标签。
 
    ```bash
    .venv/bin/python -m feedback_eval.cli review-pack --store-dir runs/feedback_eval/new_official --overlay runs/feedback_eval/new_sensitivity
@@ -138,7 +138,7 @@ export PYTHONDONTWRITEBYTECODE=1
 
 ## 局限
 
-公开 IFBench 数据是否出现在模型训练集中未知；两个模型不足以代表所有模型。远程 API 和模型可能变化，种子不保证重新生成的文本完全一致。混合补跑后的设置与原始冻结设置不同，需要报告来源和分母。内容审核包含 40 道题的配对回答，不是 320 道独立题；现有单次人工复核不能估计评分者间一致性。规则通过率不能替代完整性或事实准确性评价。当前仓库未提供完整原始记录与审核标签，精确复现既有表格仍有缺口。
+公开 IFBench 数据是否出现在模型训练集中未知；两个模型不足以代表所有模型。远程 API 和模型可能变化，种子不保证重新生成的文本完全一致。混合补跑后的设置与原始冻结设置不同，需要报告来源和分母。内容审核覆盖 260 道测试题的 2080 条配对回答，不是 2080 道独立题；现有单人标注不能估计评分者间一致性。规则通过率不能替代完整性或事实准确性评价。当前仓库未提供完整原始记录与审核标签，精确复现既有表格仍有缺口。
 
 ## 参考文献
 

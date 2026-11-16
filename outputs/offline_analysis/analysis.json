@@ -1,0 +1,949 @@
+{
+  "methods": {
+    "test": "exact two-sided cluster sign-flip, statistic absolute sum of paired differences; independent cluster swaps under exchangeability",
+    "families": "Holm correction within six baseline comparisons and separately four exploratory comparisons; all tests post hoc",
+    "robustness": "available paired; complete all four conditions; missing as failure (sensitivity only)",
+    "categories": "strict per constraint, prefix of instruction ID, descriptive; constraints within items not independent"
+  },
+  "tests": [
+    {
+      "family": "baseline_six",
+      "model": "gpt-4.1",
+      "contrast": "B1-B0",
+      "n": 258,
+      "clusters": 255,
+      "nonzero_clusters": 46,
+      "delta_pp": 3.10077519379845,
+      "p": 0.3019956131896606,
+      "holm_p": 0.42204719521760126
+    },
+    {
+      "family": "baseline_six",
+      "model": "gpt-4.1",
+      "contrast": "B2-B0",
+      "n": 258,
+      "clusters": 255,
+      "nonzero_clusters": 39,
+      "delta_pp": 9.689922480620154,
+      "p": 7.025478407740593e-05,
+      "holm_p": 0.0004215287044644356
+    },
+    {
+      "family": "baseline_six",
+      "model": "gpt-4.1",
+      "contrast": "B3-B0",
+      "n": 257,
+      "clusters": 254,
+      "nonzero_clusters": 31,
+      "delta_pp": 5.836575875486381,
+      "p": 0.010673840530216694,
+      "holm_p": 0.03202152159065008
+    },
+    {
+      "family": "baseline_six",
+      "model": "gpt-4o",
+      "contrast": "B1-B0",
+      "n": 255,
+      "clusters": 252,
+      "nonzero_clusters": 41,
+      "delta_pp": 3.5294117647058822,
+      "p": 0.21102359760880063,
+      "holm_p": 0.42204719521760126
+    },
+    {
+      "family": "baseline_six",
+      "model": "gpt-4o",
+      "contrast": "B2-B0",
+      "n": 258,
+      "clusters": 255,
+      "nonzero_clusters": 46,
+      "delta_pp": 10.077519379844961,
+      "p": 0.00015641720852954677,
+      "holm_p": 0.0007820860426477338
+    },
+    {
+      "family": "baseline_six",
+      "model": "gpt-4o",
+      "contrast": "B3-B0",
+      "n": 255,
+      "clusters": 252,
+      "nonzero_clusters": 34,
+      "delta_pp": 7.8431372549019605,
+      "p": 0.0008213953115046024,
+      "holm_p": 0.0032855812460184097
+    },
+    {
+      "family": "exploratory_four",
+      "model": "gpt-4.1",
+      "contrast": "B2-B1",
+      "n": 258,
+      "clusters": 255,
+      "nonzero_clusters": 39,
+      "delta_pp": 6.589147286821706,
+      "p": 0.009475304279476404,
+      "holm_p": 0.03790121711790562
+    },
+    {
+      "family": "exploratory_four",
+      "model": "gpt-4.1",
+      "contrast": "B2-B3",
+      "n": 257,
+      "clusters": 254,
+      "nonzero_clusters": 38,
+      "delta_pp": 3.8910505836575875,
+      "p": 0.14330665429588407,
+      "holm_p": 0.28661330859176815
+    },
+    {
+      "family": "exploratory_four",
+      "model": "gpt-4o",
+      "contrast": "B2-B1",
+      "n": 255,
+      "clusters": 252,
+      "nonzero_clusters": 47,
+      "delta_pp": 6.666666666666667,
+      "p": 0.01862383661500644,
+      "holm_p": 0.05587150984501932
+    },
+    {
+      "family": "exploratory_four",
+      "model": "gpt-4o",
+      "contrast": "B2-B3",
+      "n": 255,
+      "clusters": 252,
+      "nonzero_clusters": 35,
+      "delta_pp": 2.7450980392156863,
+      "p": 0.31050465907901525,
+      "holm_p": 0.31050465907901525
+    }
+  ],
+  "robustness": [
+    {
+      "model": "gpt-4.1",
+      "contrast": "B1-B0",
+      "mode": "available",
+      "n": 258,
+      "delta_pp": 3.10077519379845
+    },
+    {
+      "model": "gpt-4.1",
+      "contrast": "B1-B0",
+      "mode": "complete_four",
+      "n": 257,
+      "delta_pp": 3.11284046692607
+    },
+    {
+      "model": "gpt-4.1",
+      "contrast": "B1-B0",
+      "mode": "missing_fail",
+      "n": 260,
+      "delta_pp": 3.076923076923077
+    },
+    {
+      "model": "gpt-4.1",
+      "contrast": "B2-B0",
+      "mode": "available",
+      "n": 258,
+      "delta_pp": 9.689922480620154
+    },
+    {
+      "model": "gpt-4.1",
+      "contrast": "B2-B0",
+      "mode": "complete_four",
+      "n": 257,
+      "delta_pp": 9.727626459143968
+    },
+    {
+      "model": "gpt-4.1",
+      "contrast": "B2-B0",
+      "mode": "missing_fail",
+      "n": 260,
+      "delta_pp": 9.615384615384615
+    },
+    {
+      "model": "gpt-4.1",
+      "contrast": "B3-B0",
+      "mode": "available",
+      "n": 257,
+      "delta_pp": 5.836575875486381
+    },
+    {
+      "model": "gpt-4.1",
+      "contrast": "B3-B0",
+      "mode": "complete_four",
+      "n": 257,
+      "delta_pp": 5.836575875486381
+    },
+    {
+      "model": "gpt-4.1",
+      "contrast": "B3-B0",
+      "mode": "missing_fail",
+      "n": 260,
+      "delta_pp": 5.769230769230769
+    },
+    {
+      "model": "gpt-4.1",
+      "contrast": "B2-B1",
+      "mode": "available",
+      "n": 258,
+      "delta_pp": 6.589147286821706
+    },
+    {
+      "model": "gpt-4.1",
+      "contrast": "B2-B1",
+      "mode": "complete_four",
+      "n": 257,
+      "delta_pp": 6.614785992217898
+    },
+    {
+      "model": "gpt-4.1",
+      "contrast": "B2-B1",
+      "mode": "missing_fail",
+      "n": 260,
+      "delta_pp": 6.538461538461538
+    },
+    {
+      "model": "gpt-4.1",
+      "contrast": "B2-B3",
+      "mode": "available",
+      "n": 257,
+      "delta_pp": 3.8910505836575875
+    },
+    {
+      "model": "gpt-4.1",
+      "contrast": "B2-B3",
+      "mode": "complete_four",
+      "n": 257,
+      "delta_pp": 3.8910505836575875
+    },
+    {
+      "model": "gpt-4.1",
+      "contrast": "B2-B3",
+      "mode": "missing_fail",
+      "n": 260,
+      "delta_pp": 3.8461538461538463
+    },
+    {
+      "model": "gpt-4o",
+      "contrast": "B1-B0",
+      "mode": "available",
+      "n": 255,
+      "delta_pp": 3.5294117647058822
+    },
+    {
+      "model": "gpt-4o",
+      "contrast": "B1-B0",
+      "mode": "complete_four",
+      "n": 254,
+      "delta_pp": 3.937007874015748
+    },
+    {
+      "model": "gpt-4o",
+      "contrast": "B1-B0",
+      "mode": "missing_fail",
+      "n": 260,
+      "delta_pp": 3.4615384615384617
+    },
+    {
+      "model": "gpt-4o",
+      "contrast": "B2-B0",
+      "mode": "available",
+      "n": 258,
+      "delta_pp": 10.077519379844961
+    },
+    {
+      "model": "gpt-4o",
+      "contrast": "B2-B0",
+      "mode": "complete_four",
+      "n": 254,
+      "delta_pp": 10.62992125984252
+    },
+    {
+      "model": "gpt-4o",
+      "contrast": "B2-B0",
+      "mode": "missing_fail",
+      "n": 260,
+      "delta_pp": 10.0
+    },
+    {
+      "model": "gpt-4o",
+      "contrast": "B3-B0",
+      "mode": "available",
+      "n": 255,
+      "delta_pp": 7.8431372549019605
+    },
+    {
+      "model": "gpt-4o",
+      "contrast": "B3-B0",
+      "mode": "complete_four",
+      "n": 254,
+      "delta_pp": 7.874015748031496
+    },
+    {
+      "model": "gpt-4o",
+      "contrast": "B3-B0",
+      "mode": "missing_fail",
+      "n": 260,
+      "delta_pp": 7.3076923076923075
+    },
+    {
+      "model": "gpt-4o",
+      "contrast": "B2-B1",
+      "mode": "available",
+      "n": 255,
+      "delta_pp": 6.666666666666667
+    },
+    {
+      "model": "gpt-4o",
+      "contrast": "B2-B1",
+      "mode": "complete_four",
+      "n": 254,
+      "delta_pp": 6.692913385826771
+    },
+    {
+      "model": "gpt-4o",
+      "contrast": "B2-B1",
+      "mode": "missing_fail",
+      "n": 260,
+      "delta_pp": 6.538461538461538
+    },
+    {
+      "model": "gpt-4o",
+      "contrast": "B2-B3",
+      "mode": "available",
+      "n": 255,
+      "delta_pp": 2.7450980392156863
+    },
+    {
+      "model": "gpt-4o",
+      "contrast": "B2-B3",
+      "mode": "complete_four",
+      "n": 254,
+      "delta_pp": 2.7559055118110236
+    },
+    {
+      "model": "gpt-4o",
+      "contrast": "B2-B3",
+      "mode": "missing_fail",
+      "n": 260,
+      "delta_pp": 2.6923076923076925
+    }
+  ],
+  "categories": [
+    {
+      "model": "gpt-4.1",
+      "condition": "B0",
+      "category": "count",
+      "n": 55,
+      "fail": 15
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B0",
+      "category": "custom",
+      "n": 10,
+      "fail": 3
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B0",
+      "category": "format",
+      "n": 85,
+      "fail": 32
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B0",
+      "category": "ratio",
+      "n": 37,
+      "fail": 18
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B0",
+      "category": "repeat",
+      "n": 9,
+      "fail": 4
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B0",
+      "category": "sentence",
+      "n": 21,
+      "fail": 9
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B0",
+      "category": "words",
+      "n": 82,
+      "fail": 46
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B1",
+      "category": "count",
+      "n": 55,
+      "fail": 14
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B1",
+      "category": "custom",
+      "n": 10,
+      "fail": 1
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B1",
+      "category": "format",
+      "n": 85,
+      "fail": 23
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B1",
+      "category": "ratio",
+      "n": 36,
+      "fail": 18
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B1",
+      "category": "repeat",
+      "n": 9,
+      "fail": 5
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B1",
+      "category": "sentence",
+      "n": 21,
+      "fail": 9
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B1",
+      "category": "words",
+      "n": 82,
+      "fail": 47
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B2",
+      "category": "count",
+      "n": 55,
+      "fail": 13
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B2",
+      "category": "custom",
+      "n": 10,
+      "fail": 1
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B2",
+      "category": "format",
+      "n": 85,
+      "fail": 22
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B2",
+      "category": "ratio",
+      "n": 36,
+      "fail": 12
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B2",
+      "category": "repeat",
+      "n": 9,
+      "fail": 4
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B2",
+      "category": "sentence",
+      "n": 21,
+      "fail": 7
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B2",
+      "category": "words",
+      "n": 82,
+      "fail": 39
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B3",
+      "category": "count",
+      "n": 55,
+      "fail": 13
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B3",
+      "category": "custom",
+      "n": 10,
+      "fail": 1
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B3",
+      "category": "format",
+      "n": 84,
+      "fail": 20
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B3",
+      "category": "ratio",
+      "n": 36,
+      "fail": 16
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B3",
+      "category": "repeat",
+      "n": 9,
+      "fail": 3
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B3",
+      "category": "sentence",
+      "n": 21,
+      "fail": 11
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B3",
+      "category": "words",
+      "n": 82,
+      "fail": 45
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B0",
+      "category": "count",
+      "n": 55,
+      "fail": 14
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B0",
+      "category": "custom",
+      "n": 10,
+      "fail": 2
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B0",
+      "category": "format",
+      "n": 85,
+      "fail": 27
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B0",
+      "category": "ratio",
+      "n": 37,
+      "fail": 19
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B0",
+      "category": "repeat",
+      "n": 9,
+      "fail": 3
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B0",
+      "category": "sentence",
+      "n": 21,
+      "fail": 11
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B0",
+      "category": "words",
+      "n": 82,
+      "fail": 41
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B1",
+      "category": "count",
+      "n": 55,
+      "fail": 13
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B1",
+      "category": "custom",
+      "n": 10,
+      "fail": 0
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B1",
+      "category": "format",
+      "n": 83,
+      "fail": 25
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B1",
+      "category": "ratio",
+      "n": 35,
+      "fail": 16
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B1",
+      "category": "repeat",
+      "n": 9,
+      "fail": 4
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B1",
+      "category": "sentence",
+      "n": 21,
+      "fail": 10
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B1",
+      "category": "words",
+      "n": 80,
+      "fail": 36
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B2",
+      "category": "count",
+      "n": 55,
+      "fail": 7
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B2",
+      "category": "custom",
+      "n": 10,
+      "fail": 1
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B2",
+      "category": "format",
+      "n": 85,
+      "fail": 20
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B2",
+      "category": "ratio",
+      "n": 36,
+      "fail": 12
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B2",
+      "category": "repeat",
+      "n": 9,
+      "fail": 3
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B2",
+      "category": "sentence",
+      "n": 21,
+      "fail": 9
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B2",
+      "category": "words",
+      "n": 82,
+      "fail": 35
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B3",
+      "category": "count",
+      "n": 55,
+      "fail": 11
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B3",
+      "category": "custom",
+      "n": 10,
+      "fail": 0
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B3",
+      "category": "format",
+      "n": 83,
+      "fail": 21
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B3",
+      "category": "ratio",
+      "n": 35,
+      "fail": 14
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B3",
+      "category": "repeat",
+      "n": 9,
+      "fail": 1
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B3",
+      "category": "sentence",
+      "n": 21,
+      "fail": 11
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B3",
+      "category": "words",
+      "n": 80,
+      "fail": 33
+    }
+  ],
+  "review": [
+    {
+      "model": "gpt-4.1",
+      "condition": "B0",
+      "sample": "review",
+      "n": 40,
+      "passed": 31
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B0",
+      "sample": "remaining",
+      "n": 219,
+      "passed": 107
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B0",
+      "sample": "all",
+      "n": 259,
+      "passed": 138
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B1",
+      "sample": "review",
+      "n": 40,
+      "passed": 27
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B1",
+      "sample": "remaining",
+      "n": 218,
+      "passed": 119
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B1",
+      "sample": "all",
+      "n": 258,
+      "passed": 146
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B2",
+      "sample": "review",
+      "n": 40,
+      "passed": 31
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B2",
+      "sample": "remaining",
+      "n": 218,
+      "passed": 132
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B2",
+      "sample": "all",
+      "n": 258,
+      "passed": 163
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B3",
+      "sample": "review",
+      "n": 40,
+      "passed": 31
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B3",
+      "sample": "remaining",
+      "n": 217,
+      "passed": 122
+    },
+    {
+      "model": "gpt-4.1",
+      "condition": "B3",
+      "sample": "all",
+      "n": 257,
+      "passed": 153
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B0",
+      "sample": "review",
+      "n": 40,
+      "passed": 26
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B0",
+      "sample": "remaining",
+      "n": 219,
+      "passed": 122
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B0",
+      "sample": "all",
+      "n": 259,
+      "passed": 148
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B1",
+      "sample": "review",
+      "n": 40,
+      "passed": 29
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B1",
+      "sample": "remaining",
+      "n": 215,
+      "passed": 128
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B1",
+      "sample": "all",
+      "n": 255,
+      "passed": 157
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B2",
+      "sample": "review",
+      "n": 40,
+      "passed": 29
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B2",
+      "sample": "remaining",
+      "n": 218,
+      "passed": 145
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B2",
+      "sample": "all",
+      "n": 258,
+      "passed": 174
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B3",
+      "sample": "review",
+      "n": 40,
+      "passed": 31
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B3",
+      "sample": "remaining",
+      "n": 215,
+      "passed": 136
+    },
+    {
+      "model": "gpt-4o",
+      "condition": "B3",
+      "sample": "all",
+      "n": 255,
+      "passed": 167
+    }
+  ],
+  "cases": [
+    {
+      "model": "gpt-4.1",
+      "item": "173",
+      "condition": "B0",
+      "strict": false,
+      "response": "No. Let \\(B_n(x)=x^n\\). For each \\(x<1\\), \\(B_n(x)\\to0\\), while \\(B_n(1)=1\\). Thus the pointwise limit is \\(f(x)=0\\) for \\(x<1\\) and \\(f(1)=1\\). However, \\(\\sup_{x\\in[0,1]}|B_n(x)-f(x)|=1\\) for every \\(n\\), so convergence is not uniform.",
+      "sources": [
+        "runs/feedback_eval/official/records/5990d27afbd6fd9bfccc751b06d408bba6409429da8039f355b3a7c56df4170c.json"
+      ]
+    },
+    {
+      "model": "gpt-4.1",
+      "item": "173",
+      "condition": "B2",
+      "strict": true,
+      "response": "No. Choose \\(B_n(x)=x^n\\). Pointwise limit: \\(f(x)=0\\) for \\(x<1\\), and \\(f(1)=1\\). Yet \\(\\sup_{x\\in[0,1]}|B_n(x)-f(x)|=1\\) for every \\(n\\). Therefore, convergence is not uniform.",
+      "sources": [
+        "runs/feedback_eval/official/records/ff2d09d5e19c928e72a96fbefe17df813491fcce7788f239ac58b535ea3159f0.json"
+      ]
+    },
+    {
+      "model": "gpt-4.1",
+      "item": "287",
+      "condition": "B0",
+      "strict": true,
+      "response": "on a certain",
+      "sources": [
+        "runs/feedback_eval/official/records/94919394b81fb7a665e4dbf9dde55485e75c33c4cb37e62af33f172fd6d3e988.json"
+      ]
+    },
+    {
+      "model": "gpt-4.1",
+      "item": "287",
+      "condition": "B1",
+      "strict": false,
+      "response": "lands on a",
+      "sources": [
+        "runs/feedback_eval/official/records/2d8a2af224777ee3deff6e55a54ff5cc8481ba853d665a96a3b7acb21b9ad080.json"
+      ]
+    },
+    {
+      "model": "gpt-4o",
+      "item": "247",
+      "condition": "B2",
+      "strict": true,
+      "response": "Baudrillard: signs replace truth; media craft myths; false tales claim truth.",
+      "sources": [
+        "runs/feedback_eval/official/records/5ccc93905015dfa3d6b391520cfea7f893e58ff1ce393c9b15fa54a6eada0fbc.json"
+      ]
+    }
+  ],
+  "n_replaced": 169
+}

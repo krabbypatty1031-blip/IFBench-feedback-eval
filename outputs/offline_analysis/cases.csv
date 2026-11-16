@@ -1,0 +1,6 @@
+model,item,condition,strict,response,sources
+gpt-4.1,173,B0,False,"No. Let \(B_n(x)=x^n\). For each \(x<1\), \(B_n(x)\to0\), while \(B_n(1)=1\). Thus the pointwise limit is \(f(x)=0\) for \(x<1\) and \(f(1)=1\). However, \(\sup_{x\in[0,1]}|B_n(x)-f(x)|=1\) for every \(n\), so convergence is not uniform.",['runs/feedback_eval/official/records/5990d27afbd6fd9bfccc751b06d408bba6409429da8039f355b3a7c56df4170c.json']
+gpt-4.1,173,B2,True,"No. Choose \(B_n(x)=x^n\). Pointwise limit: \(f(x)=0\) for \(x<1\), and \(f(1)=1\). Yet \(\sup_{x\in[0,1]}|B_n(x)-f(x)|=1\) for every \(n\). Therefore, convergence is not uniform.",['runs/feedback_eval/official/records/ff2d09d5e19c928e72a96fbefe17df813491fcce7788f239ac58b535ea3159f0.json']
+gpt-4.1,287,B0,True,on a certain,['runs/feedback_eval/official/records/94919394b81fb7a665e4dbf9dde55485e75c33c4cb37e62af33f172fd6d3e988.json']
+gpt-4.1,287,B1,False,lands on a,['runs/feedback_eval/official/records/2d8a2af224777ee3deff6e55a54ff5cc8481ba853d665a96a3b7acb21b9ad080.json']
+gpt-4o,247,B2,True,Baudrillard: signs replace truth; media craft myths; false tales claim truth.,['runs/feedback_eval/official/records/5ccc93905015dfa3d6b391520cfea7f893e58ff1ce393c9b15fa54a6eada0fbc.json']

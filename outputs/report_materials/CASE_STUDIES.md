@@ -1,6 +1,6 @@
 # 典型案例素材
 
-按分析目的选取的示例，不用于估计发生率。以下为完整原文，未改写回答。未参与 40 题内容审核的案例不赋予人工审核标签。
+按分析目的选取的示例，不用于估计发生率。以下为完整原文，未改写回答。内容标签来自全测试集审核。
 
 ## 约束修复：gpt-4.1 / item 173
 
@@ -12,7 +12,7 @@ Suppose a sequence of polynomials B_n(x) converge pointwise to f(x) on [0, 1]. D
 
 ### B0：strict FAIL
 
-逐约束结果：[False]；内容标签：未在内容审核样本中。
+逐约束结果：[False]；内容标签：complete。
 
 ````text
 No. Let \(B_n(x)=x^n\). For each \(x<1\), \(B_n(x)\to0\), while \(B_n(1)=1\). Thus the pointwise limit is \(f(x)=0\) for \(x<1\) and \(f(1)=1\). However, \(\sup_{x\in[0,1]}|B_n(x)-f(x)|=1\) for every \(n\), so convergence is not uniform.
@@ -22,7 +22,7 @@ No. Let \(B_n(x)=x^n\). For each \(x<1\), \(B_n(x)\to0\), while \(B_n(1)=1\). Th
 
 ### B1：strict FAIL
 
-逐约束结果：[False]；内容标签：未在内容审核样本中。
+逐约束结果：[False]；内容标签：complete。
 
 ````text
 No. The polynomials \(B_n(x)=x^n\) converge pointwise to \(f(x)=0\) for \(x<1\), and \(f(1)=1\). Yet \(\sup_{x\in[0,1]}|B_n(x)-f(x)|=1\) for every \(n\); convergence is not uniform.
@@ -32,7 +32,7 @@ No. The polynomials \(B_n(x)=x^n\) converge pointwise to \(f(x)=0\) for \(x<1\),
 
 ### B2：strict PASS
 
-逐约束结果：[True]；内容标签：未在内容审核样本中。
+逐约束结果：[True]；内容标签：complete。
 
 ````text
 No. Choose \(B_n(x)=x^n\). Pointwise limit: \(f(x)=0\) for \(x<1\), and \(f(1)=1\). Yet \(\sup_{x\in[0,1]}|B_n(x)-f(x)|=1\) for every \(n\). Therefore, convergence is not uniform.
@@ -48,7 +48,7 @@ Verifier (strict): FAILED. At least one output constraint was not satisfied.
 
 ### B3：strict FAIL
 
-逐约束结果：[False]；内容标签：未在内容审核样本中。
+逐约束结果：[False]；内容标签：complete。
 
 ````text
 Pointwise convergence need not be uniform. Take \(B_n(x)=x^n\) on \([0,1]\). Its limit is \(f(x)=0\) for \(x<1\), with \(f(1)=1\). For every \(n\), \(\sup_{x\in[0,1]}|B_n(x)-f(x)|=1\). Therefore, convergence is not uniform.
@@ -222,7 +222,7 @@ can you reduce the size of this context as much as possible, use adjectives at m
 
 ### B0：strict FAIL
 
-逐约束结果：[False, True]；内容标签：未在内容审核样本中。
+逐约束结果：[False, True]；内容标签：complete。
 
 ````text
 “Correlate ‘dhost’, ‘src’, and ‘rt’ to detect ‘“coordinated brute-force attempts”’.” 🔎
@@ -232,7 +232,7 @@ can you reduce the size of this context as much as possible, use adjectives at m
 
 ### B1：strict FAIL
 
-逐约束结果：[False, True]；内容标签：未在内容审核样本中。
+逐约束结果：[False, True]；内容标签：complete。
 
 ````text
 “Correlate ‘src’, ‘dhost’, and ‘rt’ to detect ‘“’failed logins from multiple IPs to a server at unusual hours’”’ as brute-force activity.” 🔎
@@ -242,7 +242,7 @@ can you reduce the size of this context as much as possible, use adjectives at m
 
 ### B2：strict PASS
 
-逐约束结果：[True, True]；内容标签：未在内容审核样本中。
+逐约束结果：[True, True]；内容标签：complete。
 
 ````text
 "Correlate 'failed logins at "unusual hours"' by src, rt, and dhost to detect attacks." 🔎
@@ -258,7 +258,7 @@ Verifier (strict): FAILED. At least one output constraint was not satisfied.
 
 ### B3：strict FAIL
 
-逐约束结果：[False, True]；内容标签：未在内容审核样本中。
+逐约束结果：[False, True]；内容标签：complete。
 
 ````text
 “Correlate FortiSIEM ‘src’, ‘dhost’, and ‘rt’: repeated failed logins from varied IPs at unusual times may indicate ‘“‘coordinated brute-force attacks’”’.” 🔎

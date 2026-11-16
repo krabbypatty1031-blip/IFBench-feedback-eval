@@ -1,0 +1,753 @@
+{
+  "n": 2080,
+  "n_items": 260,
+  "labels": {
+    "complete": 2033,
+    "partial": 9,
+    "incomplete": 17,
+    "cannot_judge": 21
+  },
+  "complete_rate_among_judged": 0.9873725109276348,
+  "by_condition": {
+    "B0": {
+      "complete": 512,
+      "partial": 2,
+      "incomplete": 4,
+      "cannot_judge": 2
+    },
+    "B1": {
+      "complete": 508,
+      "partial": 2,
+      "incomplete": 3,
+      "cannot_judge": 7
+    },
+    "B2": {
+      "complete": 510,
+      "partial": 3,
+      "incomplete": 3,
+      "cannot_judge": 4
+    },
+    "B3": {
+      "complete": 503,
+      "incomplete": 7,
+      "partial": 2,
+      "cannot_judge": 8
+    }
+  },
+  "by_model": {
+    "gpt-4.1": {
+      "complete": 1022,
+      "incomplete": 6,
+      "partial": 4,
+      "cannot_judge": 8
+    },
+    "gpt-4o": {
+      "complete": 1011,
+      "partial": 5,
+      "incomplete": 11,
+      "cannot_judge": 13
+    }
+  },
+  "vs_strict": {
+    "complete": {
+      "n": 2033,
+      "strict_pass": 1227,
+      "strict_fail": 806,
+      "no_score": 0
+    },
+    "partial": {
+      "n": 9,
+      "strict_pass": 7,
+      "strict_fail": 2,
+      "no_score": 0
+    },
+    "incomplete": {
+      "n": 17,
+      "strict_pass": 12,
+      "strict_fail": 5,
+      "no_score": 0
+    },
+    "cannot_judge": {
+      "n": 21,
+      "strict_pass": 0,
+      "strict_fail": 0,
+      "no_score": 21
+    }
+  },
+  "content_paired": {
+    "B1": {
+      "n_pairs": 513,
+      "repair": 1,
+      "regress": 0,
+      "same": 512
+    },
+    "B2": {
+      "n_pairs": 516,
+      "repair": 2,
+      "regress": 1,
+      "same": 513
+    },
+    "B3": {
+      "n_pairs": 512,
+      "repair": 1,
+      "regress": 4,
+      "same": 507
+    }
+  },
+  "non_complete": [
+    {
+      "review_id": "orig-R009",
+      "item_id": "247",
+      "model": "gpt-4o",
+      "condition": "B2",
+      "label": "partial",
+      "notes": "On-topic slogan only; does not explain Baudrillard beyond one line.",
+      "strict": true
+    },
+    {
+      "review_id": "orig-R029",
+      "item_id": "159",
+      "model": "gpt-4.1",
+      "condition": "B3",
+      "label": "incomplete",
+      "notes": "Verifier PASS lines only; no Lord's Prayer rewrite.",
+      "strict": false
+    },
+    {
+      "review_id": "orig-R077",
+      "item_id": "247",
+      "model": "gpt-4.1",
+      "condition": "B1",
+      "label": "partial",
+      "notes": "On-topic slogan only; does not explain Baudrillard beyond one line.",
+      "strict": false
+    },
+    {
+      "review_id": "orig-R189",
+      "item_id": "247",
+      "model": "gpt-4.1",
+      "condition": "B0",
+      "label": "partial",
+      "notes": "On-topic slogan only; does not explain Baudrillard beyond one line.",
+      "strict": true
+    },
+    {
+      "review_id": "orig-R213",
+      "item_id": "247",
+      "model": "gpt-4o",
+      "condition": "B0",
+      "label": "partial",
+      "notes": "On-topic slogan only; does not explain Baudrillard beyond one line.",
+      "strict": false
+    },
+    {
+      "review_id": "orig-R216",
+      "item_id": "247",
+      "model": "gpt-4o",
+      "condition": "B3",
+      "label": "partial",
+      "notes": "On-topic slogan only; does not explain Baudrillard beyond one line.",
+      "strict": true
+    },
+    {
+      "review_id": "orig-R239",
+      "item_id": "247",
+      "model": "gpt-4.1",
+      "condition": "B3",
+      "label": "partial",
+      "notes": "On-topic slogan only; does not explain Baudrillard beyond one line.",
+      "strict": true
+    },
+    {
+      "review_id": "orig-R249",
+      "item_id": "247",
+      "model": "gpt-4.1",
+      "condition": "B2",
+      "label": "partial",
+      "notes": "On-topic slogan only; does not explain Baudrillard beyond one line.",
+      "strict": true
+    },
+    {
+      "review_id": "orig-R252",
+      "item_id": "247",
+      "model": "gpt-4o",
+      "condition": "B1",
+      "label": "partial",
+      "notes": "On-topic slogan only; does not explain Baudrillard beyond one line.",
+      "strict": true
+    },
+    {
+      "review_id": "rem-R013",
+      "item_id": "284",
+      "model": "gpt-4o",
+      "condition": "B3",
+      "label": "incomplete",
+      "notes": "Copied a prompt span; no explanation of the paper.",
+      "strict": true
+    },
+    {
+      "review_id": "rem-R048",
+      "item_id": "168",
+      "model": "gpt-4.1",
+      "condition": "B3",
+      "label": "cannot_judge",
+      "notes": "No usable response (empty_response).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R050",
+      "item_id": "287",
+      "model": "gpt-4o",
+      "condition": "B1",
+      "label": "incomplete",
+      "notes": "Copied a prompt span; no method for the quadratic question.",
+      "strict": false
+    },
+    {
+      "review_id": "rem-R106",
+      "item_id": "251",
+      "model": "gpt-4o",
+      "condition": "B2",
+      "label": "partial",
+      "notes": "One-word 'Due.' is on-topic but does not select a listed choice.",
+      "strict": true
+    },
+    {
+      "review_id": "rem-R142",
+      "item_id": "81",
+      "model": "gpt-4o",
+      "condition": "B1",
+      "label": "cannot_judge",
+      "notes": "No usable response (empty_response).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R162",
+      "item_id": "287",
+      "model": "gpt-4o",
+      "condition": "B3",
+      "label": "incomplete",
+      "notes": "Copied a prompt span; no method for the quadratic question.",
+      "strict": true
+    },
+    {
+      "review_id": "rem-R164",
+      "item_id": "286",
+      "model": "gpt-4o",
+      "condition": "B3",
+      "label": "incomplete",
+      "notes": "Copied a prompt span; no sentence making the house appealing.",
+      "strict": true
+    },
+    {
+      "review_id": "rem-R232",
+      "item_id": "284",
+      "model": "gpt-4o",
+      "condition": "B2",
+      "label": "incomplete",
+      "notes": "Copied a prompt span; no explanation of the paper.",
+      "strict": true
+    },
+    {
+      "review_id": "rem-R333",
+      "item_id": "287",
+      "model": "gpt-4.1",
+      "condition": "B2",
+      "label": "incomplete",
+      "notes": "Copied a prompt span; no method for the quadratic question.",
+      "strict": true
+    },
+    {
+      "review_id": "rem-R350",
+      "item_id": "287",
+      "model": "gpt-4o",
+      "condition": "B0",
+      "label": "incomplete",
+      "notes": "Copied a prompt span; no method for the quadratic question.",
+      "strict": true
+    },
+    {
+      "review_id": "rem-R403",
+      "item_id": "147",
+      "model": "gpt-4.1",
+      "condition": "B3",
+      "label": "cannot_judge",
+      "notes": "No usable response (error).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R405",
+      "item_id": "203",
+      "model": "gpt-4o",
+      "condition": "B3",
+      "label": "cannot_judge",
+      "notes": "No usable response (empty_response).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R445",
+      "item_id": "147",
+      "model": "gpt-4.1",
+      "condition": "B1",
+      "label": "cannot_judge",
+      "notes": "No usable response (error).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R736",
+      "item_id": "147",
+      "model": "gpt-4.1",
+      "condition": "B2",
+      "label": "cannot_judge",
+      "notes": "No usable response (error).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R817",
+      "item_id": "286",
+      "model": "gpt-4o",
+      "condition": "B1",
+      "label": "incomplete",
+      "notes": "Copied a prompt span; no sentence making the house appealing.",
+      "strict": true
+    },
+    {
+      "review_id": "rem-R822",
+      "item_id": "205",
+      "model": "gpt-4o",
+      "condition": "B1",
+      "label": "cannot_judge",
+      "notes": "No usable response (empty_response).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R834",
+      "item_id": "83",
+      "model": "gpt-4o",
+      "condition": "B3",
+      "label": "incomplete",
+      "notes": "Verifier PASS line only; no definitions of preludes/caprichos/romances/ballads.",
+      "strict": false
+    },
+    {
+      "review_id": "rem-R902",
+      "item_id": "147",
+      "model": "gpt-4o",
+      "condition": "B1",
+      "label": "cannot_judge",
+      "notes": "No usable response (error).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R1042",
+      "item_id": "227",
+      "model": "gpt-4o",
+      "condition": "B1",
+      "label": "cannot_judge",
+      "notes": "No usable response (error).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R1056",
+      "item_id": "113",
+      "model": "gpt-4.1",
+      "condition": "B3",
+      "label": "incomplete",
+      "notes": "Verifier PASS line only; no screenplay.",
+      "strict": true
+    },
+    {
+      "review_id": "rem-R1093",
+      "item_id": "124",
+      "model": "gpt-4.1",
+      "condition": "B3",
+      "label": "cannot_judge",
+      "notes": "No usable response (error).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R1171",
+      "item_id": "287",
+      "model": "gpt-4o",
+      "condition": "B2",
+      "label": "incomplete",
+      "notes": "Copied a prompt span; no method for the quadratic question.",
+      "strict": false
+    },
+    {
+      "review_id": "rem-R1186",
+      "item_id": "205",
+      "model": "gpt-4o",
+      "condition": "B3",
+      "label": "cannot_judge",
+      "notes": "No usable response (empty_response).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R1231",
+      "item_id": "81",
+      "model": "gpt-4o",
+      "condition": "B3",
+      "label": "cannot_judge",
+      "notes": "No usable response (empty_response).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R1247",
+      "item_id": "168",
+      "model": "gpt-4.1",
+      "condition": "B2",
+      "label": "cannot_judge",
+      "notes": "No usable response (empty_response).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R1261",
+      "item_id": "287",
+      "model": "gpt-4.1",
+      "condition": "B3",
+      "label": "incomplete",
+      "notes": "Copied a prompt span; no method for the quadratic question.",
+      "strict": true
+    },
+    {
+      "review_id": "rem-R1340",
+      "item_id": "251",
+      "model": "gpt-4o",
+      "condition": "B0",
+      "label": "incomplete",
+      "notes": "Off-topic 'Two works.'; does not complete the SAT blank.",
+      "strict": true
+    },
+    {
+      "review_id": "rem-R1355",
+      "item_id": "286",
+      "model": "gpt-4o",
+      "condition": "B0",
+      "label": "incomplete",
+      "notes": "Copied a prompt span; no sentence making the house appealing.",
+      "strict": true
+    },
+    {
+      "review_id": "rem-R1459",
+      "item_id": "168",
+      "model": "gpt-4o",
+      "condition": "B3",
+      "label": "cannot_judge",
+      "notes": "No usable response (empty_response).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R1460",
+      "item_id": "287",
+      "model": "gpt-4.1",
+      "condition": "B0",
+      "label": "incomplete",
+      "notes": "Copied a prompt span; no method for the quadratic question.",
+      "strict": true
+    },
+    {
+      "review_id": "rem-R1505",
+      "item_id": "147",
+      "model": "gpt-4.1",
+      "condition": "B0",
+      "label": "cannot_judge",
+      "notes": "No usable response (error).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R1520",
+      "item_id": "147",
+      "model": "gpt-4o",
+      "condition": "B0",
+      "label": "cannot_judge",
+      "notes": "No usable response (error).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R1563",
+      "item_id": "147",
+      "model": "gpt-4o",
+      "condition": "B2",
+      "label": "cannot_judge",
+      "notes": "No usable response (error).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R1565",
+      "item_id": "168",
+      "model": "gpt-4.1",
+      "condition": "B1",
+      "label": "cannot_judge",
+      "notes": "No usable response (empty_response).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R1585",
+      "item_id": "168",
+      "model": "gpt-4o",
+      "condition": "B2",
+      "label": "cannot_judge",
+      "notes": "No usable response (empty_response).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R1624",
+      "item_id": "147",
+      "model": "gpt-4o",
+      "condition": "B3",
+      "label": "cannot_judge",
+      "notes": "No usable response (error).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R1648",
+      "item_id": "168",
+      "model": "gpt-4o",
+      "condition": "B1",
+      "label": "cannot_judge",
+      "notes": "No usable response (empty_response).",
+      "strict": null
+    },
+    {
+      "review_id": "rem-R1690",
+      "item_id": "287",
+      "model": "gpt-4.1",
+      "condition": "B1",
+      "label": "incomplete",
+      "notes": "Copied a prompt span; no method for the quadratic question.",
+      "strict": false
+    }
+  ],
+  "criterion": "original_user_task_not_ifbench_constraints",
+  "single_rater": true,
+  "n_frozen_sample": 320,
+  "n_remaining": 1760,
+  "packs": {
+    "frozen_n40": {
+      "n": 320,
+      "n_items": 40,
+      "labels": {
+        "complete": 311,
+        "partial": 8,
+        "incomplete": 1
+      },
+      "complete_rate_among_judged": 0.971875,
+      "by_condition": {
+        "B0": {
+          "complete": 78,
+          "partial": 2
+        },
+        "B1": {
+          "complete": 78,
+          "partial": 2
+        },
+        "B2": {
+          "complete": 78,
+          "partial": 2
+        },
+        "B3": {
+          "complete": 77,
+          "incomplete": 1,
+          "partial": 2
+        }
+      },
+      "by_model": {
+        "gpt-4.1": {
+          "complete": 155,
+          "incomplete": 1,
+          "partial": 4
+        },
+        "gpt-4o": {
+          "complete": 156,
+          "partial": 4
+        }
+      },
+      "vs_strict": {
+        "complete": {
+          "n": 311,
+          "strict_pass": 229,
+          "strict_fail": 82,
+          "no_score": 0
+        },
+        "partial": {
+          "n": 8,
+          "strict_pass": 6,
+          "strict_fail": 2,
+          "no_score": 0
+        },
+        "incomplete": {
+          "n": 1,
+          "strict_pass": 0,
+          "strict_fail": 1,
+          "no_score": 0
+        }
+      },
+      "content_paired": {
+        "B1": {
+          "n_pairs": 80,
+          "repair": 0,
+          "regress": 0,
+          "same": 80
+        },
+        "B2": {
+          "n_pairs": 80,
+          "repair": 0,
+          "regress": 0,
+          "same": 80
+        },
+        "B3": {
+          "n_pairs": 80,
+          "repair": 0,
+          "regress": 1,
+          "same": 79
+        }
+      },
+      "non_complete": [
+        {
+          "review_id": "orig-R009",
+          "item_id": "247",
+          "model": "gpt-4o",
+          "condition": "B2",
+          "label": "partial",
+          "notes": "On-topic slogan only; does not explain Baudrillard beyond one line.",
+          "strict": true
+        },
+        {
+          "review_id": "orig-R029",
+          "item_id": "159",
+          "model": "gpt-4.1",
+          "condition": "B3",
+          "label": "incomplete",
+          "notes": "Verifier PASS lines only; no Lord's Prayer rewrite.",
+          "strict": false
+        },
+        {
+          "review_id": "orig-R077",
+          "item_id": "247",
+          "model": "gpt-4.1",
+          "condition": "B1",
+          "label": "partial",
+          "notes": "On-topic slogan only; does not explain Baudrillard beyond one line.",
+          "strict": false
+        },
+        {
+          "review_id": "orig-R189",
+          "item_id": "247",
+          "model": "gpt-4.1",
+          "condition": "B0",
+          "label": "partial",
+          "notes": "On-topic slogan only; does not explain Baudrillard beyond one line.",
+          "strict": true
+        },
+        {
+          "review_id": "orig-R213",
+          "item_id": "247",
+          "model": "gpt-4o",
+          "condition": "B0",
+          "label": "partial",
+          "notes": "On-topic slogan only; does not explain Baudrillard beyond one line.",
+          "strict": false
+        },
+        {
+          "review_id": "orig-R216",
+          "item_id": "247",
+          "model": "gpt-4o",
+          "condition": "B3",
+          "label": "partial",
+          "notes": "On-topic slogan only; does not explain Baudrillard beyond one line.",
+          "strict": true
+        },
+        {
+          "review_id": "orig-R239",
+          "item_id": "247",
+          "model": "gpt-4.1",
+          "condition": "B3",
+          "label": "partial",
+          "notes": "On-topic slogan only; does not explain Baudrillard beyond one line.",
+          "strict": true
+        },
+        {
+          "review_id": "orig-R249",
+          "item_id": "247",
+          "model": "gpt-4.1",
+          "condition": "B2",
+          "label": "partial",
+          "notes": "On-topic slogan only; does not explain Baudrillard beyond one line.",
+          "strict": true
+        },
+        {
+          "review_id": "orig-R252",
+          "item_id": "247",
+          "model": "gpt-4o",
+          "condition": "B1",
+          "label": "partial",
+          "notes": "On-topic slogan only; does not explain Baudrillard beyond one line.",
+          "strict": true
+        }
+      ],
+      "criterion": "original_user_task_not_ifbench_constraints",
+      "single_rater": true
+    },
+    "remaining_220": {
+      "n": 1760,
+      "n_items": 220,
+      "labels": {
+        "complete": 1722,
+        "incomplete": 16,
+        "cannot_judge": 21,
+        "partial": 1
+      },
+      "by_condition": {
+        "B0": {
+          "complete": 434,
+          "incomplete": 4,
+          "cannot_judge": 2
+        },
+        "B1": {
+          "complete": 430,
+          "incomplete": 3,
+          "cannot_judge": 7
+        },
+        "B2": {
+          "complete": 432,
+          "partial": 1,
+          "incomplete": 3,
+          "cannot_judge": 4
+        },
+        "B3": {
+          "complete": 426,
+          "incomplete": 6,
+          "cannot_judge": 8
+        }
+      },
+      "vs_strict": {
+        "complete": {
+          "n": 1722,
+          "strict_pass": 998,
+          "strict_fail": 724,
+          "no_score": 0
+        },
+        "incomplete": {
+          "n": 16,
+          "strict_pass": 12,
+          "strict_fail": 4,
+          "no_score": 0
+        },
+        "cannot_judge": {
+          "n": 21,
+          "strict_pass": 0,
+          "strict_fail": 0,
+          "no_score": 21
+        },
+        "partial": {
+          "n": 1,
+          "strict_pass": 1,
+          "strict_fail": 0,
+          "no_score": 0
+        }
+      }
+    }
+  },
+  "note": "2080 labels = frozen 40-item sample plus the other 220 test items. Single rater; not inter-rater reliability."
+}

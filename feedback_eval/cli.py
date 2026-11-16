@@ -1180,7 +1180,7 @@ def main(argv: list[str] | None = None) -> int:
     analyze_p.add_argument("--overlay", action="append", type=Path, default=None)
     analyze_p.add_argument("--no-overlay", action="store_true")
     review_p = sub.add_parser(
-        "review-pack", help="Write a blinded 40-item content-review pack"
+        "review-pack", help="Write a blinded content-review pack from freeze human_review ids"
     )
     review_p.add_argument("--store-dir", type=Path, required=True)
     review_p.add_argument("--out-dir", type=Path, default=None)

@@ -30,10 +30,11 @@ feedback:
   verifier_error: skip_revision_record_feedback_unavailable
   mapping_error: skip_revision_record_feedback_unavailable
 human_review:
-  n_items: 40
+  n_items: 260
   seed: 42
   split: test
   blinding: hide_model_and_condition
+  coverage: all_test_items
 cost_cap:
   amount: null
   currency: null
