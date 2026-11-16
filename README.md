@@ -110,7 +110,7 @@ export PYTHONDONTWRITEBYTECODE=1
    .venv/bin/python scripts/run_empty_b0_16384.py --paid --official-dir runs/feedback_eval/new_official --out-dir runs/feedback_eval/new_sensitivity --config configs/feedback_eval/sensitivity_empty_b0_16384.yaml
    ```
 
-   此命令需要实际产生空 B0、有效接口和授权；未在本次验证中进行付费调用。原报告还使用了一条 32768 探测恢复结果；**TODO：公开该探测记录和可复现步骤**。
+   此命令需要实际产生空 B0、有效接口和授权；未在本次验证中进行付费调用。原实验另有更高上限的恢复正文，已并入 overlay 目录 `retry_recovered_20261116/`。
 
 4. **分析新结果**。输入：新运行记录及补跑目录；输出：新运行目录中的 `analysis.json` 和 `overlay_manifest.json`；API 费用：0。使用明确的 `--overlay`，避免混入本机其他实验。
 

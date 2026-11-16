@@ -897,8 +897,7 @@ def _default_official_overlays() -> list[Path]:
     root = _repo_root()
     candidates = [
         root / "runs" / "feedback_eval" / "sensitivity_empty_b0_16384",
-        root / "runs" / "feedback_eval" / "probe_b3_32768",
-        # 2026-11-16 remaining empty/error recoveries, then the two 32768 leftovers.
+        # Recovered empty/error identities, including the 32768 leftover.
         root / "runs" / "feedback_eval" / "retry_recovered_20261116",
     ]
     return [path for path in candidates if (path / "records").is_dir()]
