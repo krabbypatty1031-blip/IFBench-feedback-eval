@@ -1,0 +1,145 @@
+% Generated from the saved experiment summaries; see source paths in Appendix C.
+\section{Statistical Comparisons and Robustness}
+\label{app:statistics}
+Tables~\ref{tab:strict-tests} and~\ref{tab:content-tests} report the post-hoc two-sided exact cluster sign-flip tests for strict accuracy and content completion, respectively. Model labels 4.1 and 4o refer to gpt-4.1 and gpt-4o. Each comparison uses 259 paired prompts per model. Identified related tasks form clusters; other prompts form individual clusters. The test assumes condition labels are exchangeable within clusters under the null. The difference $\Delta$ and its confidence interval (CI) are in percentage points (pp). For each outcome, Holm correction is applied separately to six B1/B2/B3 versus B0 comparisons and four exploratory comparisons of B2 versus B1/B3. The statistical tests and correction families were specified after the experiment. An interval of [0, 0] reflects the observed resamples and does not establish equivalence.
+
+
+\begin{table}[!t]
+\caption{Strict accuracy: paired differences and post-hoc tests.}
+\label{tab:strict-tests}
+\centering\scriptsize
+\begin{tabular}{llrrrr}
+\toprule
+Model & Contrast & $\Delta$ & 95\% CI & $p$ & Holm $p$ \\
+\midrule
+
+4.1 & B1-B0 & +3.09 & [-1.93, 8.11] & 0.30200 & 0.42205 \\
+
+4.1 & B2-B0 & +9.65 & [5.04, 14.01] & 0.00007 & 0.00042 \\
+
+4.1 & B3-B0 & +5.79 & [1.51, 9.73] & 0.01067 & 0.03202 \\
+
+4o & B1-B0 & +3.47 & [-1.16, 8.49] & 0.21102 & 0.42205 \\
+
+4o & B2-B0 & +10.04 & [5.40, 15.18] & 0.00016 & 0.00078 \\
+
+4o & B3-B0 & +7.72 & [3.47, 11.72] & 0.00082 & 0.00329 \\
+
+4.1 & B2-B1 & +6.56 & [2.26, 11.54] & 0.00948 & 0.03790 \\
+
+4.1 & B2-B3 & +3.86 & [-0.39, 8.37] & 0.14331 & 0.28661 \\
+
+4o & B2-B1 & +6.56 & [1.93, 11.97] & 0.01862 & 0.05587 \\
+
+4o & B2-B3 & +2.32 & [-2.30, 7.39] & 0.40503 & 0.40503 \\
+
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[!t]
+\caption{Content completion: paired differences and post-hoc tests.}
+\label{tab:content-tests}
+\centering\scriptsize
+\begin{tabular}{llrrrr}
+\toprule
+Model & Contrast & $\Delta$ & 95\% CI & $p$ & Holm $p$ \\
+\midrule
+
+4.1 & B1-B0 & +0.00 & [0.00, 0.00] & 1.00000 & 1.00000 \\
+
+4.1 & B2-B0 & +0.00 & [0.00, 0.00] & 1.00000 & 1.00000 \\
+
+4.1 & B3-B0 & -0.77 & [-1.93, 0.00] & 0.50000 & 1.00000 \\
+
+4o & B1-B0 & +0.39 & [0.00, 1.17] & 1.00000 & 1.00000 \\
+
+4o & B2-B0 & +0.00 & [-1.16, 1.15] & 1.00000 & 1.00000 \\
+
+4o & B3-B0 & -0.39 & [-1.92, 0.78] & 1.00000 & 1.00000 \\
+
+4.1 & B2-B1 & +0.00 & [0.00, 0.00] & 1.00000 & 1.00000 \\
+
+4.1 & B2-B3 & +0.77 & [0.00, 1.95] & 0.50000 & 1.00000 \\
+
+4o & B2-B1 & -0.39 & [-1.56, 0.78] & 1.00000 & 1.00000 \\
+
+4o & B2-B3 & +0.39 & [-0.78, 1.92] & 1.00000 & 1.00000 \\
+
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:robustness} compares paired point estimates under available-pair, complete-four-condition, and missing-as-failure treatments. The last is a sensitivity scenario rather than an observed failure label. The 95\% intervals reported in the source results are unadjusted percentile cluster-bootstrap intervals based on 1,000 resamples and seed 42; they are not Holm-adjusted and are calculated by a different procedure from the sign-flip $p$-values.
+\begin{table}[!t]
+\caption{Missing-data sensitivity: paired differences (pp).}
+\label{tab:robustness}
+\centering\footnotesize
+\begin{tabular}{llrrr}
+\toprule
+Model & Contrast & Available & Complete & Missing fail \\
+\midrule
+
+4.1 & B1-B0 & +3.09 & +3.09 & +3.08 \\
+
+4.1 & B2-B0 & +9.65 & +9.65 & +9.62 \\
+
+4.1 & B3-B0 & +5.79 & +5.79 & +5.77 \\
+
+4.1 & B2-B1 & +6.56 & +6.56 & +6.54 \\
+
+4.1 & B2-B3 & +3.86 & +3.86 & +3.85 \\
+
+4o & B1-B0 & +3.47 & +3.47 & +3.46 \\
+
+4o & B2-B0 & +10.04 & +10.04 & +10.00 \\
+
+4o & B3-B0 & +7.72 & +7.72 & +7.69 \\
+
+4o & B2-B1 & +6.56 & +6.56 & +6.54 \\
+
+4o & B2-B3 & +2.32 & +2.32 & +2.31 \\
+
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Revision Prompts}
+\label{app:prompts}
+For B0, the model received the unmodified IFBench user prompt. Each revision branch received the original user prompt, the B0 assistant response, and a new user message containing the following components in order. Sections labeled as templates below describe the message construction; the labels themselves were not sent to the model.
+
+\subsection{Shared Revision Instruction}
+
+\begin{quote}
+Please review your previous answer against the original user message. Keep the original task and every output constraint from that message.
+\end{quote}
+
+\subsection{B1: Self-Revision}
+\begin{quote}
+Check the original output constraints yourself. Do not assume they were already satisfied.
+\end{quote}
+
+\subsection{B2: Overall Verifier Feedback}
+The following message was selected using the strict verifier outcome:
+\begin{quote}
+Verifier (strict): PASSED all output constraints.
+\end{quote}
+\begin{quote}
+Verifier (strict): FAILED. At least one output constraint was not satisfied.
+\end{quote}
+
+\subsection{B3: Per-Constraint Verifier Feedback}
+The header was followed by one numbered line per constraint, in the original order. Each line contained PASS or FAIL and the corresponding requirement from the original prompt.
+\begin{quote}
+Verifier (strict), one line per constraint, in listed order:
+\end{quote}
+
+\subsection{Passing Answer and Output Rule}
+For B2 and B3, the following instruction was added only when B0 passed the strict verifier:
+\begin{quote}
+The previous answer already passed the output constraints. You may leave the answer unchanged.
+\end{quote}
+All branches ended with:
+\begin{quote}
+Return only the final answer. Do not describe the revision.
+\end{quote}

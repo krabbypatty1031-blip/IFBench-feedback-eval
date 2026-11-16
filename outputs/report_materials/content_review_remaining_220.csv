@@ -46,7 +46,7 @@ R044,209,gpt-4.1,B1,complete,,True
 R045,177,gpt-4.1,B0,complete,,True
 R046,171,gpt-4.1,B1,complete,,True
 R047,277,gpt-4o,B0,complete,,True
-R048,168,gpt-4.1,B3,cannot_judge,No usable response (empty_response).,
+R048,168,gpt-4.1,B3,complete,,False
 R049,172,gpt-4.1,B3,complete,,True
 R050,287,gpt-4o,B1,incomplete,Copied a prompt span; no method for the quadratic question.,False
 R051,119,gpt-4.1,B1,complete,,False
@@ -140,7 +140,7 @@ R138,127,gpt-4.1,B3,complete,,True
 R139,16,gpt-4.1,B2,complete,,True
 R140,138,gpt-4o,B2,complete,,True
 R141,101,gpt-4o,B1,complete,,True
-R142,81,gpt-4o,B1,cannot_judge,No usable response (empty_response).,
+R142,81,gpt-4o,B1,complete,,False
 R143,264,gpt-4.1,B1,complete,,False
 R144,270,gpt-4.1,B2,complete,,False
 R145,41,gpt-4o,B3,complete,,False
@@ -403,7 +403,7 @@ R401,177,gpt-4.1,B1,complete,,True
 R402,82,gpt-4o,B0,complete,,True
 R403,147,gpt-4.1,B3,cannot_judge,No usable response (error).,
 R404,218,gpt-4.1,B2,complete,,False
-R405,203,gpt-4o,B3,cannot_judge,No usable response (empty_response).,
+R405,203,gpt-4o,B3,complete,,True
 R406,30,gpt-4o,B1,complete,,True
 R407,187,gpt-4.1,B0,complete,,False
 R408,273,gpt-4o,B0,complete,,True
@@ -820,7 +820,7 @@ R818,243,gpt-4o,B3,complete,,True
 R819,164,gpt-4o,B2,complete,,True
 R820,239,gpt-4o,B1,complete,,True
 R821,196,gpt-4o,B2,complete,,False
-R822,205,gpt-4o,B1,cannot_judge,No usable response (empty_response).,
+R822,205,gpt-4o,B1,complete,,False
 R823,241,gpt-4o,B3,complete,,False
 R824,57,gpt-4.1,B2,complete,,False
 R825,112,gpt-4.1,B0,complete,,True
@@ -1040,7 +1040,7 @@ R1038,297,gpt-4.1,B0,complete,,False
 R1039,126,gpt-4.1,B2,complete,,True
 R1040,134,gpt-4o,B0,complete,,False
 R1041,282,gpt-4o,B2,complete,,True
-R1042,227,gpt-4o,B1,cannot_judge,No usable response (error).,
+R1042,227,gpt-4o,B1,complete,,False
 R1043,217,gpt-4o,B3,complete,,True
 R1044,205,gpt-4.1,B1,complete,,False
 R1045,92,gpt-4o,B3,complete,,True
@@ -1091,7 +1091,7 @@ R1089,288,gpt-4o,B1,complete,,False
 R1090,119,gpt-4o,B0,complete,,False
 R1091,129,gpt-4.1,B0,complete,,True
 R1092,294,gpt-4o,B0,complete,,True
-R1093,124,gpt-4.1,B3,cannot_judge,No usable response (error).,
+R1093,124,gpt-4.1,B3,complete,,False
 R1094,163,gpt-4.1,B3,complete,,True
 R1095,121,gpt-4o,B0,complete,,False
 R1096,260,gpt-4o,B2,complete,,True
@@ -1184,7 +1184,7 @@ R1182,227,gpt-4.1,B3,complete,,False
 R1183,280,gpt-4o,B1,complete,,True
 R1184,47,gpt-4.1,B1,complete,,True
 R1185,199,gpt-4o,B2,complete,,False
-R1186,205,gpt-4o,B3,cannot_judge,No usable response (empty_response).,
+R1186,205,gpt-4o,B3,complete,,False
 R1187,196,gpt-4o,B1,complete,,False
 R1188,6,gpt-4o,B1,complete,,True
 R1189,258,gpt-4.1,B3,complete,,False
@@ -1229,7 +1229,7 @@ R1227,193,gpt-4o,B2,complete,,True
 R1228,107,gpt-4.1,B0,complete,,True
 R1229,151,gpt-4.1,B3,complete,,False
 R1230,191,gpt-4o,B1,complete,,False
-R1231,81,gpt-4o,B3,cannot_judge,No usable response (empty_response).,
+R1231,81,gpt-4o,B3,complete,,False
 R1232,255,gpt-4.1,B1,complete,,True
 R1233,230,gpt-4.1,B2,complete,,False
 R1234,243,gpt-4.1,B3,complete,,False
@@ -1245,7 +1245,7 @@ R1243,283,gpt-4o,B2,complete,,True
 R1244,101,gpt-4o,B2,complete,,True
 R1245,114,gpt-4o,B3,complete,,True
 R1246,19,gpt-4o,B1,complete,,True
-R1247,168,gpt-4.1,B2,cannot_judge,No usable response (empty_response).,
+R1247,168,gpt-4.1,B2,complete,,False
 R1248,103,gpt-4o,B1,complete,,True
 R1249,26,gpt-4.1,B3,complete,,True
 R1250,124,gpt-4.1,B0,complete,,False
@@ -1457,7 +1457,7 @@ R1455,69,gpt-4.1,B2,complete,,False
 R1456,210,gpt-4o,B3,complete,,False
 R1457,221,gpt-4o,B2,complete,,False
 R1458,29,gpt-4.1,B3,complete,,True
-R1459,168,gpt-4o,B3,cannot_judge,No usable response (empty_response).,
+R1459,168,gpt-4o,B3,complete,,False
 R1460,287,gpt-4.1,B0,incomplete,Copied a prompt span; no method for the quadratic question.,True
 R1461,234,gpt-4o,B1,complete,,True
 R1462,283,gpt-4o,B3,complete,,True
@@ -1563,7 +1563,7 @@ R1561,128,gpt-4o,B1,complete,,False
 R1562,69,gpt-4o,B2,complete,,False
 R1563,147,gpt-4o,B2,cannot_judge,No usable response (error).,
 R1564,24,gpt-4o,B3,complete,,True
-R1565,168,gpt-4.1,B1,cannot_judge,No usable response (empty_response).,
+R1565,168,gpt-4.1,B1,complete,,False
 R1566,13,gpt-4o,B0,complete,,True
 R1567,226,gpt-4.1,B3,complete,,False
 R1568,161,gpt-4.1,B0,complete,,True
@@ -1583,7 +1583,7 @@ R1581,57,gpt-4.1,B1,complete,,False
 R1582,67,gpt-4o,B2,complete,,False
 R1583,40,gpt-4o,B1,complete,,False
 R1584,81,gpt-4.1,B0,complete,,False
-R1585,168,gpt-4o,B2,cannot_judge,No usable response (empty_response).,
+R1585,168,gpt-4o,B2,complete,,False
 R1586,163,gpt-4o,B0,complete,,True
 R1587,215,gpt-4.1,B1,complete,,True
 R1588,193,gpt-4.1,B3,complete,,True
@@ -1646,7 +1646,7 @@ R1644,164,gpt-4o,B3,complete,,True
 R1645,125,gpt-4o,B1,complete,,False
 R1646,80,gpt-4.1,B2,complete,,False
 R1647,184,gpt-4o,B1,complete,,True
-R1648,168,gpt-4o,B1,cannot_judge,No usable response (empty_response).,
+R1648,168,gpt-4o,B1,complete,,False
 R1649,171,gpt-4.1,B0,complete,,True
 R1650,46,gpt-4.1,B2,complete,,True
 R1651,250,gpt-4.1,B1,complete,,True

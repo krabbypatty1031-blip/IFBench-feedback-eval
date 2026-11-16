@@ -10,11 +10,16 @@ import pytest
 from feedback_eval.analysis import (
     bootstrap_paired_diffs,
     build_review_pack,
+    content_complete_flag,
+    exact_cluster_sign_flip,
+    holm_adjust,
     hydrate_overlay_record,
     load_records,
+    make_content_flag,
     overlay_records,
     rate,
     summarize,
+    summarize_content,
 )
 from feedback_eval.cli import main
 from feedback_eval.store import record_key
@@ -108,6 +113,61 @@ def test_missing_and_empty_stay_out_of_success_denominator() -> None:
     assert summary["accounting"]["success"] == 2
     assert summary["accounting"]["empty_response"] == 1
     assert summary["accounting"]["missing"] == 0
+
+
+def test_content_complete_excludes_cannot_judge_and_pairs_repair() -> None:
+    """Content accuracy uses complete vs not-complete; cannot_judge is missing."""
+    records = [
+        _success("m", "1", "B0", strict=True),
+        _success("m", "1", "B1", strict=True),
+        _success("m", "2", "B0", strict=True),
+        _success("m", "2", "B1", strict=True),
+        _success("m", "3", "B0", strict=True),
+        _success("m", "3", "B1", strict=True),
+        _empty("m", "4", "B0"),
+        _empty("m", "4", "B1"),
+    ]
+    labels = {
+        ("m", "1", "B0"): "incomplete",
+        ("m", "1", "B1"): "complete",
+        ("m", "2", "B0"): "complete",
+        ("m", "2", "B1"): "incomplete",
+        ("m", "3", "B0"): "complete",
+        ("m", "3", "B1"): "complete",
+        ("m", "4", "B0"): "cannot_judge",
+        ("m", "4", "B1"): "cannot_judge",
+    }
+    assert content_complete_flag("complete") is True
+    assert content_complete_flag("partial") is False
+    assert content_complete_flag("cannot_judge") is None
+    summary = summarize_content(records, labels)
+    b0 = summary["by_model"]["m"]["complete_prompt"]["B0"]
+    b1 = summary["by_model"]["m"]["complete_prompt"]["B1"]
+    assert b0 == {"n": 2, "d": 3, "value": 2 / 3}
+    assert b1 == {"n": 2, "d": 3, "value": 2 / 3}
+    assert summary["by_model"]["m"]["repair"]["B1"] == {"n": 1, "d": 1, "value": 1.0}
+    assert summary["by_model"]["m"]["regress"]["B1"] == {"n": 1, "d": 2, "value": 0.5}
+    boot = bootstrap_paired_diffs(
+        records,
+        n_resamples=20,
+        seed=42,
+        flag_fn=make_content_flag(labels),
+        result_key="content_complete_diff",
+    )
+    assert boot["m"]["B1"]["content_complete_diff"]["n_pairs"] == 3
+    assert boot["m"]["B1"]["content_complete_diff"]["point"] == 0.0
+
+
+def test_holm_and_sign_flip_on_known_pairs() -> None:
+    """All-positive deltas reject; Holm is monotone in raw p."""
+    pairs = [("1", 1), ("2", 1), ("3", 1), ("4", 1)]
+    result = exact_cluster_sign_flip(pairs, {})
+    assert result["n_pairs"] == 4
+    assert result["p"] == 2 / 16
+    rows = [{"p": 0.01}, {"p": 0.04}, {"p": 0.03}]
+    holm_adjust(rows)
+    assert rows[0]["holm_p"] == pytest.approx(0.03)
+    assert rows[1]["holm_p"] >= rows[0]["holm_p"]
 
 
 def test_bootstrap_is_deterministic_and_item_clustered() -> None:

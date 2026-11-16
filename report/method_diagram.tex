@@ -1,0 +1,38 @@
+% Vector diagram for the independent IFBench revision branches.
+\definecolor{bzero}{HTML}{0072B2}
+\definecolor{bone}{HTML}{E69F00}
+\definecolor{btwo}{HTML}{009E73}
+\definecolor{bthree}{HTML}{CC79A7}
+\definecolor{flowgray}{HTML}{45535E}
+\begin{tikzpicture}[
+    font=\sffamily\small,
+    block/.style={draw=flowgray, line width=0.65pt, rounded corners=2pt,
+      fill=white, align=center, minimum height=0.94cm, text width=2.15cm,
+      inner sep=4pt},
+    branch/.style={block, text width=2.9cm, minimum height=0.98cm},
+    flow/.style={-{Stealth[length=2.2mm]}, draw=flowgray, line width=0.7pt},
+    note/.style={font=\sffamily\scriptsize, text=flowgray, align=center}
+  ]
+  \node[block] (prompt) at (0,0) {\textbf{IFBench}\\Original prompt};
+  \node[block, draw=bzero, line width=0.9pt] (b0) at (3.1,0)
+    {\textbf{B0}\\Initial answer};
+  \node[block] (verify) at (6.2,-0.85) {\textbf{Strict}\\verifier};
+  \node[branch, draw=bone, line width=0.9pt] (b1) at (10.0,1.5)
+    {\textbf{B1} \; Self-revision\\Self-check request};
+  \node[branch, draw=btwo, line width=0.9pt] (b2) at (10.0,0)
+    {\textbf{B2} \; Overall feedback\\Pass / fail};
+  \node[branch, draw=bthree, line width=0.9pt] (b3) at (10.0,-1.5)
+    {\textbf{B3} \; Per-constraint feedback\\Pass / fail by constraint};
+  \node[block, text width=2.35cm] (eval) at (14.0,0)
+    {\textbf{Evaluation}\\Strict / loose scores};
+  \draw[flow] (prompt) -- (b0);
+  \draw[flow] (b0.north) |- (b1.west);
+  \draw[flow] (b0.south) |- (verify.west);
+  \draw[flow] (verify.north) |- (b2.west);
+  \draw[flow] (verify.south) |- (b3.west);
+  \draw[flow] (b1.east) -| (eval.north);
+  \draw[flow] (b2.east) -- (eval.west);
+  \draw[flow] (b3.east) -| (eval.south);
+  \node[note] at (7.9,2.42) {All branches receive the same original prompt and B0 answer};
+  \node[note] at (14.0,-2.25) {Content review\\conducted separately};
+\end{tikzpicture}

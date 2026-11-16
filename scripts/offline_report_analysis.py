@@ -17,7 +17,7 @@ OUT = ROOT / 'outputs/offline_analysis'
 conditions = ('B0', 'B1', 'B2', 'B3')
 freeze = json.loads((STORE / 'freeze.json').read_text())
 rows, replaced, sources = _prepare_analysis_records(STORE, freeze, None, False)
-assert len(rows) == 2080 and len(replaced) == 169
+assert len(rows) == 2080 and len(replaced) == 182
 assert summarize(rows) == json.loads((STORE / 'analysis.json').read_text())['summary']
 idx = {(_model_of(r), str(r['item_id']), r['condition']): r for r in rows}
 items = {str(x['key']): x for x in map(json.loads, (ROOT/'data/IFBench_test.jsonl').read_text().splitlines())}

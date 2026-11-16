@@ -65,7 +65,17 @@ def load_all_content_labels(idx):
 def build():
     sys.path.insert(0, str(ROOT))
     from feedback_eval.cli import _prepare_analysis_records, _load_homology_groups
-    from feedback_eval.analysis import summarize, bootstrap_paired_diffs, _model_of
+    from feedback_eval.analysis import (
+        summarize,
+        bootstrap_paired_diffs,
+        _model_of,
+        summarize_content,
+        make_content_flag,
+        homology_group_of,
+        exact_cluster_sign_flip,
+        holm_adjust,
+        paired_binary_deltas,
+    )
     freeze = json.loads((STORE / 'freeze.json').read_text())
     rows, replaced, sources = _prepare_analysis_records(STORE, freeze, None, False)
     summary = summarize(rows)
@@ -102,10 +112,53 @@ def build():
             contrasts.append({'model': model, 'contrast': target+'−'+ref,
                               'exploratory': ref != 'B0', **estimate})
     content, cross, label_by_identity, pack_paths = load_all_content_labels(idx)
+    content_summary = summarize_content(rows, label_by_identity)
+    content_flag = make_content_flag(label_by_identity)
+    content_boot = bootstrap_paired_diffs(
+        rows, groups=groups, flag_fn=content_flag, result_key='content_complete_diff'
+    )
+    content_contrasts = []
+    for target in CONDITIONS[1:]:
+        for model, block in content_boot.items():
+            content_contrasts.append({
+                'model': model, 'contrast': target+'−B0', 'exploratory': False,
+                **block[target]['content_complete_diff'],
+            })
+    for ref, target in [('B1', 'B2'), ('B3', 'B2')]:
+        extra = bootstrap_paired_diffs(
+            rows, groups=groups, flag_fn=content_flag,
+            result_key='content_complete_diff', ref=ref, targets=(target,),
+        )
+        for model, block in extra.items():
+            content_contrasts.append({
+                'model': model, 'contrast': target+'−'+ref, 'exploratory': True,
+                **block[target]['content_complete_diff'],
+            })
+    group_of = homology_group_of(groups)
+    content_tests = []
+    for family, pairspec in (
+        ('baseline_six', [('B0', 'B1'), ('B0', 'B2'), ('B0', 'B3')]),
+        ('exploratory_four', [('B1', 'B2'), ('B3', 'B2')]),
+    ):
+        family_tests = []
+        for model in sorted(content_summary['by_model']):
+            for ref, target in pairspec:
+                pairs = paired_binary_deltas(rows, model, ref, target, content_flag)
+                flip = exact_cluster_sign_flip(pairs, group_of)
+                n = len(pairs)
+                family_tests.append({
+                    'family': family, 'model': model, 'contrast': target+'−'+ref,
+                    'delta_pp': (100 * sum(d for _, d in pairs) / n) if n else None,
+                    **flip,
+                })
+        holm_adjust(family_tests)
+        content_tests.extend(family_tests)
     payload = {'policy': 'Current merged results only; existing successes retained; recovered text replaces failed generations.',
                'n_records': len(rows), 'n_replaced': len(replaced), 'summary': summary,
                'tables': tables, 'contrasts': contrasts, 'content_by_condition': dict(content),
                'content_vs_strict': dict(cross),
+               'content_summary': content_summary, 'content_contrasts': content_contrasts,
+               'content_tests': content_tests,
                'review_scope': '260 test items, 2 models, 4 conditions; 2080 single-rater content labels covering the full test set.'}
     write_json(OUT/'results.json', payload)
     lines = ['# 最终结果表与解读', '', '统一使用当前合并结果。空回答和 API 错误作为缺失，分母为可评分回答；配对差异只使用两条件均可评分的题目。', '',
@@ -127,7 +180,50 @@ def build():
     for label in ('complete','partial','incomplete','cannot_judge'):
         block = cross[label]
         lines.append(f"| {label} | {block['strict_pass']} | {block['strict_fail']} | {block['no_score']} |")
-    lines += ['', '## 报告可用结论', '', '- B2 与 B3 相对 B0 的 strict 配对提升在两个模型上均为正，95% 区间不含零；B1 区间包含零。', '- 探索性比较中 B2 优于 B1；B2 与 B3 的区间包含零，不能声称 B2 显著优于 B3。', '- B2 的修复率分别为 26.7% 和 32.7%，同时存在 5.1% 和 6.8% 的规则退化。', '- 全量内容审核中 2033/2059 条已判定回答为 complete；806 条内容完整但 strict 失败；7 条 partial 与 12 条 incomplete 仍 strict 通过。规则遵循与内容充分性应分别讨论。', '- 21 条无法判定。内容标签接近天花板，不能据此证明反馈不会损害内容质量。', '', '## 图注', '', '- 01_prompt_accuracy：strict 与 loose 提示级通过率；柱上标明通过数/可评分数，纵轴从零开始。', '- 02_paired_effects：配对 strict 差异与未校正 95% bootstrap 区间；下方两组对比为探索性。', '- 03_repair_regression：修复和退化的分子/分母；两种率的分母不同。', '- 04_content_review：内容标签计数和 strict 交叉表；2080 条覆盖全部 260 道测试题。', '', '## 来源与复现', '', '`results.json` 保存全部表格原数值，`source_manifest.json` 保存输入文件哈希。图表为英文，中文说明在本文件。生成过程不调用外部 API、不改写实验记录及评分。', '', '```bash', 'NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python scripts/build_report_materials.py', 'python3 scripts/build_report_materials.py --plots', '```']
+    lines += ['', '## 表 6：盲审后的内容完成率', '',
+              '把 `complete` 当作原任务正确，`partial`/`incomplete` 当作未完成；`cannot_judge` 不计分母。这是内容正确率，不是 IFBench strict。单人标注，检验为事后。', '',
+              '| Model | Condition | Complete / judged | Rate |', '|---|---|---:|---:|']
+    for model in sorted(content_summary['by_model']):
+        for condition in CONDITIONS:
+            r = content_summary['by_model'][model]['complete_prompt'][condition]
+            lines.append(f"| {model} | {condition} | {r['n']}/{r['d']} | {fmt(r)} |")
+    p_by = {(t['model'], t['contrast']): t for t in content_tests}
+    lines += ['', '## 表 7：内容完成率配对差异', '',
+              '单位：百分点。聚类 bootstrap 与表 3 相同（1000 次，seed=42，同源组）。符号翻转 p 与 Holm 校正是事后附加的，不是冻结时预注册。', '',
+              '| Model | Contrast | Paired items | Estimate | 95% interval | Holm p | Type |',
+              '|---|---|---:|---:|---:|---:|---|']
+    for c in content_contrasts:
+        test = p_by.get((c['model'], c['contrast']), {})
+        holm = test.get('holm_p')
+        holm_s = f"{holm:.5f}" if holm is not None else 'NA'
+        lines.append(
+            f"| {c['model']} | {c['contrast']} | {c['n_pairs']} | {100*c['point']:+.2f} | "
+            f"[{100*c['low']:+.2f}, {100*c['high']:+.2f}] | {holm_s} | "
+            f"{'探索性' if c['exploratory'] else '预定 B0 对比'} |"
+        )
+    lines += ['', '## 表 8：内容修复率与退化率', '',
+              '修复：B0 非 complete 且修订为 complete；退化：B0 为 complete 且修订不是 complete。分母只含两端均可判定的配对。', '',
+              '| Model | Condition | Content repair | Content regression |', '|---|---|---:|---:|']
+    for model, block in content_summary['by_model'].items():
+        for condition in CONDITIONS[1:]:
+            lines.append(
+                f"| {model} | {condition} | {fmt(block['repair'][condition])} | {fmt(block['regress'][condition])} |"
+            )
+    n_complete = sum(content[c]['complete'] for c in CONDITIONS)
+    n_partial = sum(content[c]['partial'] for c in CONDITIONS)
+    n_incomplete = sum(content[c]['incomplete'] for c in CONDITIONS)
+    n_cannot = sum(content[c]['cannot_judge'] for c in CONDITIONS)
+    n_judged = n_complete + n_partial + n_incomplete
+    models_sorted = sorted(summary['by_model'])
+    b2_repair = ' 和 '.join(f"{100*summary['by_model'][m]['repair']['B2']['value']:.1f}%" for m in models_sorted)
+    b2_regress = ' 和 '.join(f"{100*summary['by_model'][m]['regress']['B2']['value']:.1f}%" for m in models_sorted)
+    lines += ['', '## 报告可用结论', '',
+              '- B2 与 B3 相对 B0 的 strict 配对提升在两个模型上均为正，95% 区间不含零；B1 区间包含零。',
+              '- 探索性比较中 B2 优于 B1；B2 与 B3 的区间包含零，不能声称 B2 显著优于 B3。',
+              f'- B2 的修复率分别为 {b2_repair}，同时存在 {b2_regress} 的规则退化。',
+              f'- 全量内容审核中 {n_complete}/{n_judged} 条已判定回答为 complete；{cross["complete"]["strict_fail"]} 条内容完整但 strict 失败；{cross["partial"]["strict_pass"]} 条 partial 与 {cross["incomplete"]["strict_pass"]} 条 incomplete 仍 strict 通过。规则遵循与内容充分性应分别讨论。',
+              f'- {n_cannot} 条无法判定（均为 item 147 的 Azure 内容过滤连锁）。内容标签接近天花板，不能据此证明反馈不会损害内容质量。',
+              '- 盲审后的内容完成率在 B1/B2/B3 上与 B0 几乎相同；配对差异的 95% 区间均含零，Holm 校正后不能拒绝无变化。反馈改善的是约束遵循，不是原任务完成率。', '', '## 图注', '', '- 01_prompt_accuracy：strict 与 loose 提示级通过率；柱上标明通过数/可评分数，纵轴从零开始。', '- 02_paired_effects：配对 strict 差异与未校正 95% bootstrap 区间；下方两组对比为探索性。', '- 03_repair_regression：修复和退化的分子/分母；两种率的分母不同。', '- 04_content_review：内容标签计数和 strict 交叉表；2080 条覆盖全部 260 道测试题。', '- 05_content_accuracy：盲审后各条件内容完成率（complete/已判定）。', '- 06_content_paired：内容完成率的配对差异与未校正 95% bootstrap 区间。', '', '## 来源与复现', '', '`results.json` 保存全部表格原数值，`source_manifest.json` 保存输入文件哈希。图表为英文，中文说明在本文件。生成过程不调用外部 API、不改写实验记录及评分。', '', '```bash', 'NLTK_DATA="$PWD/ifbench/.nltk_data" .venv/bin/python scripts/build_report_materials.py', 'python3 scripts/build_report_materials.py --plots', '```']
     (OUT/'RESULTS_TABLES.md').write_text('\n'.join(lines)+'\n')
     cases = [('repair','gpt-4.1','173','约束修复','B0 与 B2 均给出 x^n 的正确反例；B2 在保持数学结论的同时通过停用词比例约束。该案例只展示修复，不能推断每次压缩均有益。'),
              ('regression','gpt-4.1','159','修订退化','B3 返回 PASS 反馈清单，未完成祷文改写。区分验证器反馈文本与真正任务输出，展示内容与规则同时退化。'),
@@ -209,7 +305,29 @@ def plots():
     ax.set(xticks=x,xticklabels=[l.replace('_',' ').title() for l in labels],ylim=(0,2300),ylabel='Responses',title='Content and rule compliance'); ax.legend(frameon=False)
     fig.suptitle('Content labels | 260 test items × 2 models × 4 conditions')
     save(fig,'04_content_review')
-    print('Rendered four figures in PNG and editable SVG.')
+    fig,axes=plt.subplots(1,2,figsize=(12,4.8),layout='constrained')
+    content_summary=d['content_summary']['by_model']
+    for ax,m in zip(axes,models):
+        x=np.arange(4)
+        rates=[content_summary[m]['complete_prompt'][c] for c in CONDITIONS]
+        bars=ax.bar(x,[100*r['value'] for r in rates],.6,color=colors[1])
+        ax.bar_label(bars,labels=[f"{r['n']}/{r['d']}" for r in rates],padding=3,fontsize=8)
+        ax.set(xticks=x,xticklabels=CONDITIONS,ylim=(0,100),title=m,ylabel='Content complete rate (%)')
+        ax.grid(axis='y',alpha=.15)
+    fig.suptitle('Content completion after review | complete / judged')
+    save(fig,'05_content_accuracy')
+    fig,axes=plt.subplots(1,2,figsize=(12,4.8),layout='constrained')
+    for ax,m in zip(axes,models):
+        cs=[c for c in d['content_contrasts'] if c['model']==m]
+        y=np.arange(len(cs))
+        for i,c in enumerate(cs):
+            ax.errorbar(c['point']*100,i,xerr=[[100*(c['point']-c['low'])],[100*(c['high']-c['point'])]],fmt='o',color=colors[3] if c['exploratory'] else colors[0],capsize=4)
+            ax.text(1.6,i,f"n={c['n_pairs']}",va='center',fontsize=8)
+        ax.set(yticks=y,yticklabels=[c['contrast']+(' *' if c['exploratory'] else '') for c in cs],xlim=(-2.2,2.2),title=m,xlabel='Paired content-complete difference (pp)')
+        ax.invert_yaxis(); ax.axvline(0,color='grey',ls='--'); ax.axhline(2.5,color='grey',alpha=.3)
+    fig.suptitle('Paired content effects | 95% cluster bootstrap; * exploratory, unadjusted')
+    save(fig,'06_content_paired')
+    print('Rendered six figures in PNG and editable SVG.')
 
 
 if __name__ == '__main__':

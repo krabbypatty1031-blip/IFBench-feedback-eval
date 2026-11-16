@@ -2,12 +2,12 @@
   "n": 1760,
   "n_items": 220,
   "labels": {
-    "complete": 1722,
+    "complete": 1735,
     "incomplete": 16,
-    "cannot_judge": 21,
-    "partial": 1
+    "partial": 1,
+    "cannot_judge": 8
   },
-  "complete_rate_among_judged": 0.9902242668200115,
+  "complete_rate_among_judged": 0.990296803652968,
   "by_condition": {
     "B0": {
       "complete": 434,
@@ -15,40 +15,40 @@
       "cannot_judge": 2
     },
     "B1": {
-      "complete": 430,
+      "complete": 435,
       "incomplete": 3,
-      "cannot_judge": 7
+      "cannot_judge": 2
     },
     "B2": {
-      "complete": 432,
+      "complete": 434,
       "partial": 1,
       "incomplete": 3,
-      "cannot_judge": 4
+      "cannot_judge": 2
     },
     "B3": {
-      "complete": 426,
+      "complete": 432,
       "incomplete": 6,
-      "cannot_judge": 8
+      "cannot_judge": 2
     }
   },
   "by_model": {
     "gpt-4.1": {
-      "complete": 867,
-      "cannot_judge": 8,
-      "incomplete": 5
+      "complete": 871,
+      "incomplete": 5,
+      "cannot_judge": 4
     },
     "gpt-4o": {
-      "complete": 855,
+      "complete": 864,
       "incomplete": 11,
       "partial": 1,
-      "cannot_judge": 13
+      "cannot_judge": 4
     }
   },
   "vs_strict": {
     "complete": {
-      "n": 1722,
-      "strict_pass": 998,
-      "strict_fail": 724,
+      "n": 1735,
+      "strict_pass": 999,
+      "strict_fail": 736,
       "no_score": 0
     },
     "incomplete": {
@@ -57,37 +57,37 @@
       "strict_fail": 4,
       "no_score": 0
     },
-    "cannot_judge": {
-      "n": 21,
-      "strict_pass": 0,
-      "strict_fail": 0,
-      "no_score": 21
-    },
     "partial": {
       "n": 1,
       "strict_pass": 1,
       "strict_fail": 0,
       "no_score": 0
+    },
+    "cannot_judge": {
+      "n": 8,
+      "strict_pass": 0,
+      "strict_fail": 0,
+      "no_score": 8
     }
   },
   "content_paired": {
     "B1": {
-      "n_pairs": 433,
+      "n_pairs": 438,
       "repair": 1,
       "regress": 0,
-      "same": 432
+      "same": 437
     },
     "B2": {
-      "n_pairs": 436,
+      "n_pairs": 438,
       "repair": 2,
       "regress": 1,
-      "same": 433
+      "same": 435
     },
     "B3": {
-      "n_pairs": 432,
+      "n_pairs": 438,
       "repair": 1,
       "regress": 3,
-      "same": 428
+      "same": 434
     }
   },
   "non_complete": [
@@ -99,15 +99,6 @@
       "label": "incomplete",
       "notes": "Copied a prompt span; no explanation of the paper.",
       "strict": true
-    },
-    {
-      "review_id": "R048",
-      "item_id": "168",
-      "model": "gpt-4.1",
-      "condition": "B3",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
     },
     {
       "review_id": "R050",
@@ -126,15 +117,6 @@
       "label": "partial",
       "notes": "One-word 'Due.' is on-topic but does not select a listed choice.",
       "strict": true
-    },
-    {
-      "review_id": "R142",
-      "item_id": "81",
-      "model": "gpt-4o",
-      "condition": "B1",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
     },
     {
       "review_id": "R162",
@@ -191,15 +173,6 @@
       "strict": null
     },
     {
-      "review_id": "R405",
-      "item_id": "203",
-      "model": "gpt-4o",
-      "condition": "B3",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
-    },
-    {
       "review_id": "R445",
       "item_id": "147",
       "model": "gpt-4.1",
@@ -227,15 +200,6 @@
       "strict": true
     },
     {
-      "review_id": "R822",
-      "item_id": "205",
-      "model": "gpt-4o",
-      "condition": "B1",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
-    },
-    {
       "review_id": "R834",
       "item_id": "83",
       "model": "gpt-4o",
@@ -254,15 +218,6 @@
       "strict": null
     },
     {
-      "review_id": "R1042",
-      "item_id": "227",
-      "model": "gpt-4o",
-      "condition": "B1",
-      "label": "cannot_judge",
-      "notes": "No usable response (error).",
-      "strict": null
-    },
-    {
       "review_id": "R1056",
       "item_id": "113",
       "model": "gpt-4.1",
@@ -272,15 +227,6 @@
       "strict": true
     },
     {
-      "review_id": "R1093",
-      "item_id": "124",
-      "model": "gpt-4.1",
-      "condition": "B3",
-      "label": "cannot_judge",
-      "notes": "No usable response (error).",
-      "strict": null
-    },
-    {
       "review_id": "R1171",
       "item_id": "287",
       "model": "gpt-4o",
@@ -288,33 +234,6 @@
       "label": "incomplete",
       "notes": "Copied a prompt span; no method for the quadratic question.",
       "strict": false
-    },
-    {
-      "review_id": "R1186",
-      "item_id": "205",
-      "model": "gpt-4o",
-      "condition": "B3",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
-    },
-    {
-      "review_id": "R1231",
-      "item_id": "81",
-      "model": "gpt-4o",
-      "condition": "B3",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
-    },
-    {
-      "review_id": "R1247",
-      "item_id": "168",
-      "model": "gpt-4.1",
-      "condition": "B2",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
     },
     {
       "review_id": "R1261",
@@ -342,15 +261,6 @@
       "label": "incomplete",
       "notes": "Copied a prompt span; no sentence making the house appealing.",
       "strict": true
-    },
-    {
-      "review_id": "R1459",
-      "item_id": "168",
-      "model": "gpt-4o",
-      "condition": "B3",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
     },
     {
       "review_id": "R1460",
@@ -389,39 +299,12 @@
       "strict": null
     },
     {
-      "review_id": "R1565",
-      "item_id": "168",
-      "model": "gpt-4.1",
-      "condition": "B1",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
-    },
-    {
-      "review_id": "R1585",
-      "item_id": "168",
-      "model": "gpt-4o",
-      "condition": "B2",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
-    },
-    {
       "review_id": "R1624",
       "item_id": "147",
       "model": "gpt-4o",
       "condition": "B3",
       "label": "cannot_judge",
       "notes": "No usable response (error).",
-      "strict": null
-    },
-    {
-      "review_id": "R1648",
-      "item_id": "168",
-      "model": "gpt-4o",
-      "condition": "B1",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
       "strict": null
     },
     {
@@ -438,6 +321,6 @@
   "single_rater": true,
   "pack": "remaining_220",
   "seed": 42,
-  "overlay_n_replaced_store": 169,
+  "overlay_n_replaced_store": 182,
   "note": "Additional single-rater labels for the 220 test items outside the frozen n=40 sample. Does not replace the protocol sample."
 }

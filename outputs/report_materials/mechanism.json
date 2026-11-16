@@ -1,0 +1,67 @@
+{
+ "_meta": {
+  "n_records": 2080,
+  "n_replaced_by_overlay": 182,
+  "kept_definition": "Bx text == B0 text after strip()"
+ },
+ "gpt-4.1/B1": {
+  "b0_pass_kept": 15,
+  "b0_pass_rewritten": 123,
+  "b0_fail_kept": 3,
+  "b0_fail_rewritten": 118,
+  "regressed": 19,
+  "repaired": 27,
+  "b0_pass_total": 138,
+  "b0_fail_total": 121
+ },
+ "gpt-4.1/B2": {
+  "b0_pass_kept": 103,
+  "b0_pass_rewritten": 35,
+  "b0_fail_kept": 1,
+  "b0_fail_rewritten": 120,
+  "regressed": 7,
+  "repaired": 32,
+  "b0_pass_total": 138,
+  "b0_fail_total": 121
+ },
+ "gpt-4.1/B3": {
+  "b0_pass_kept": 91,
+  "b0_pass_rewritten": 47,
+  "b0_fail_kept": 1,
+  "b0_fail_rewritten": 120,
+  "regressed": 8,
+  "repaired": 23,
+  "b0_pass_total": 138,
+  "b0_fail_total": 121
+ },
+ "gpt-4o/B1": {
+  "b0_pass_kept": 16,
+  "b0_pass_rewritten": 132,
+  "b0_fail_kept": 5,
+  "b0_fail_rewritten": 106,
+  "regressed": 16,
+  "repaired": 25,
+  "b0_pass_total": 148,
+  "b0_fail_total": 111
+ },
+ "gpt-4o/B2": {
+  "b0_pass_kept": 106,
+  "b0_pass_rewritten": 42,
+  "b0_fail_kept": 1,
+  "b0_fail_rewritten": 110,
+  "regressed": 10,
+  "repaired": 36,
+  "b0_pass_total": 148,
+  "b0_fail_total": 111
+ },
+ "gpt-4o/B3": {
+  "b0_pass_kept": 100,
+  "b0_pass_rewritten": 48,
+  "b0_fail_kept": 3,
+  "b0_fail_rewritten": 108,
+  "regressed": 7,
+  "repaired": 27,
+  "b0_pass_total": 148,
+  "b0_fail_total": 111
+ }
+}

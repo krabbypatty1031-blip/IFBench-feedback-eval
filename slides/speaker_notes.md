@@ -61,6 +61,6 @@ Two real cases, copied directly from our run records, one per model. At the top,
 
 ## Slide 10 — Limitations and conclusion（[Member D]，约 60 秒）
 
-To conclude: a simple pass/fail verdict, combined with permission to keep a passing answer, gave the most reliable improvement, and self-checking alone did not. Our scope is limited: two models on the HKBU gateway, one revision round, and a single run at temperature zero. Content review covered all 2080 test identities; 2033 were complete and 21 could not be judged. It was a single rater, and content quality was already near the ceiling, so we can only say we saw no clear content damage. Protocol deviations, such as the post-hoc merging rule for reruns, are documented in the report. Contributions are listed at the bottom. Thank you for listening.
+To conclude: a simple pass/fail verdict, combined with permission to keep a passing answer, gave the most reliable improvement, and self-checking alone did not. Our scope is limited: two models on the HKBU gateway, one revision round, and a single run at temperature zero. Content review covered all 2080 test identities; 2046 were complete and 8 could not be judged after a campus content filter. It was a single rater, and content quality was already near the ceiling, so we can only say we saw no clear content damage. Protocol deviations, such as the post-hoc merging rule for reruns, are documented in the report. Contributions are listed at the bottom. Thank you for listening.
 
 > 中文要点：结论一句话；三条局限；协议偏离见报告；指一下分工行即可。

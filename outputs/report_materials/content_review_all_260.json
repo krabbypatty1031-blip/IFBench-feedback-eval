@@ -2,12 +2,12 @@
   "n": 2080,
   "n_items": 260,
   "labels": {
-    "complete": 2033,
+    "complete": 2046,
     "partial": 9,
     "incomplete": 17,
-    "cannot_judge": 21
+    "cannot_judge": 8
   },
-  "complete_rate_among_judged": 0.9873725109276348,
+  "complete_rate_among_judged": 0.9874517374517374,
   "by_condition": {
     "B0": {
       "complete": 512,
@@ -16,43 +16,43 @@
       "cannot_judge": 2
     },
     "B1": {
-      "complete": 508,
+      "complete": 513,
       "partial": 2,
       "incomplete": 3,
-      "cannot_judge": 7
+      "cannot_judge": 2
     },
     "B2": {
-      "complete": 510,
+      "complete": 512,
       "partial": 3,
       "incomplete": 3,
-      "cannot_judge": 4
+      "cannot_judge": 2
     },
     "B3": {
-      "complete": 503,
+      "complete": 509,
       "incomplete": 7,
       "partial": 2,
-      "cannot_judge": 8
+      "cannot_judge": 2
     }
   },
   "by_model": {
     "gpt-4.1": {
-      "complete": 1022,
+      "complete": 1026,
       "incomplete": 6,
       "partial": 4,
-      "cannot_judge": 8
+      "cannot_judge": 4
     },
     "gpt-4o": {
-      "complete": 1011,
+      "complete": 1020,
       "partial": 5,
       "incomplete": 11,
-      "cannot_judge": 13
+      "cannot_judge": 4
     }
   },
   "vs_strict": {
     "complete": {
-      "n": 2033,
-      "strict_pass": 1227,
-      "strict_fail": 806,
+      "n": 2046,
+      "strict_pass": 1228,
+      "strict_fail": 818,
       "no_score": 0
     },
     "partial": {
@@ -68,30 +68,30 @@
       "no_score": 0
     },
     "cannot_judge": {
-      "n": 21,
+      "n": 8,
       "strict_pass": 0,
       "strict_fail": 0,
-      "no_score": 21
+      "no_score": 8
     }
   },
   "content_paired": {
     "B1": {
-      "n_pairs": 513,
+      "n_pairs": 518,
       "repair": 1,
       "regress": 0,
-      "same": 512
+      "same": 517
     },
     "B2": {
-      "n_pairs": 516,
+      "n_pairs": 518,
       "repair": 2,
       "regress": 1,
-      "same": 513
+      "same": 515
     },
     "B3": {
-      "n_pairs": 512,
+      "n_pairs": 518,
       "repair": 1,
       "regress": 4,
-      "same": 507
+      "same": 513
     }
   },
   "non_complete": [
@@ -186,15 +186,6 @@
       "strict": true
     },
     {
-      "review_id": "rem-R048",
-      "item_id": "168",
-      "model": "gpt-4.1",
-      "condition": "B3",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
-    },
-    {
       "review_id": "rem-R050",
       "item_id": "287",
       "model": "gpt-4o",
@@ -211,15 +202,6 @@
       "label": "partial",
       "notes": "One-word 'Due.' is on-topic but does not select a listed choice.",
       "strict": true
-    },
-    {
-      "review_id": "rem-R142",
-      "item_id": "81",
-      "model": "gpt-4o",
-      "condition": "B1",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
     },
     {
       "review_id": "rem-R162",
@@ -276,15 +258,6 @@
       "strict": null
     },
     {
-      "review_id": "rem-R405",
-      "item_id": "203",
-      "model": "gpt-4o",
-      "condition": "B3",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
-    },
-    {
       "review_id": "rem-R445",
       "item_id": "147",
       "model": "gpt-4.1",
@@ -312,15 +285,6 @@
       "strict": true
     },
     {
-      "review_id": "rem-R822",
-      "item_id": "205",
-      "model": "gpt-4o",
-      "condition": "B1",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
-    },
-    {
       "review_id": "rem-R834",
       "item_id": "83",
       "model": "gpt-4o",
@@ -339,15 +303,6 @@
       "strict": null
     },
     {
-      "review_id": "rem-R1042",
-      "item_id": "227",
-      "model": "gpt-4o",
-      "condition": "B1",
-      "label": "cannot_judge",
-      "notes": "No usable response (error).",
-      "strict": null
-    },
-    {
       "review_id": "rem-R1056",
       "item_id": "113",
       "model": "gpt-4.1",
@@ -357,15 +312,6 @@
       "strict": true
     },
     {
-      "review_id": "rem-R1093",
-      "item_id": "124",
-      "model": "gpt-4.1",
-      "condition": "B3",
-      "label": "cannot_judge",
-      "notes": "No usable response (error).",
-      "strict": null
-    },
-    {
       "review_id": "rem-R1171",
       "item_id": "287",
       "model": "gpt-4o",
@@ -373,33 +319,6 @@
       "label": "incomplete",
       "notes": "Copied a prompt span; no method for the quadratic question.",
       "strict": false
-    },
-    {
-      "review_id": "rem-R1186",
-      "item_id": "205",
-      "model": "gpt-4o",
-      "condition": "B3",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
-    },
-    {
-      "review_id": "rem-R1231",
-      "item_id": "81",
-      "model": "gpt-4o",
-      "condition": "B3",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
-    },
-    {
-      "review_id": "rem-R1247",
-      "item_id": "168",
-      "model": "gpt-4.1",
-      "condition": "B2",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
     },
     {
       "review_id": "rem-R1261",
@@ -427,15 +346,6 @@
       "label": "incomplete",
       "notes": "Copied a prompt span; no sentence making the house appealing.",
       "strict": true
-    },
-    {
-      "review_id": "rem-R1459",
-      "item_id": "168",
-      "model": "gpt-4o",
-      "condition": "B3",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
     },
     {
       "review_id": "rem-R1460",
@@ -474,39 +384,12 @@
       "strict": null
     },
     {
-      "review_id": "rem-R1565",
-      "item_id": "168",
-      "model": "gpt-4.1",
-      "condition": "B1",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
-    },
-    {
-      "review_id": "rem-R1585",
-      "item_id": "168",
-      "model": "gpt-4o",
-      "condition": "B2",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
-      "strict": null
-    },
-    {
       "review_id": "rem-R1624",
       "item_id": "147",
       "model": "gpt-4o",
       "condition": "B3",
       "label": "cannot_judge",
       "notes": "No usable response (error).",
-      "strict": null
-    },
-    {
-      "review_id": "rem-R1648",
-      "item_id": "168",
-      "model": "gpt-4o",
-      "condition": "B1",
-      "label": "cannot_judge",
-      "notes": "No usable response (empty_response).",
       "strict": null
     },
     {
@@ -693,10 +576,10 @@
       "n": 1760,
       "n_items": 220,
       "labels": {
-        "complete": 1722,
+        "complete": 1735,
         "incomplete": 16,
-        "cannot_judge": 21,
-        "partial": 1
+        "partial": 1,
+        "cannot_judge": 8
       },
       "by_condition": {
         "B0": {
@@ -705,27 +588,27 @@
           "cannot_judge": 2
         },
         "B1": {
-          "complete": 430,
+          "complete": 435,
           "incomplete": 3,
-          "cannot_judge": 7
+          "cannot_judge": 2
         },
         "B2": {
-          "complete": 432,
+          "complete": 434,
           "partial": 1,
           "incomplete": 3,
-          "cannot_judge": 4
+          "cannot_judge": 2
         },
         "B3": {
-          "complete": 426,
+          "complete": 432,
           "incomplete": 6,
-          "cannot_judge": 8
+          "cannot_judge": 2
         }
       },
       "vs_strict": {
         "complete": {
-          "n": 1722,
-          "strict_pass": 998,
-          "strict_fail": 724,
+          "n": 1735,
+          "strict_pass": 999,
+          "strict_fail": 736,
           "no_score": 0
         },
         "incomplete": {
@@ -734,17 +617,17 @@
           "strict_fail": 4,
           "no_score": 0
         },
-        "cannot_judge": {
-          "n": 21,
-          "strict_pass": 0,
-          "strict_fail": 0,
-          "no_score": 21
-        },
         "partial": {
           "n": 1,
           "strict_pass": 1,
           "strict_fail": 0,
           "no_score": 0
+        },
+        "cannot_judge": {
+          "n": 8,
+          "strict_pass": 0,
+          "strict_fail": 0,
+          "no_score": 8
         }
       }
     }

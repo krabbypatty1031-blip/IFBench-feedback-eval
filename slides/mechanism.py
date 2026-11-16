@@ -9,6 +9,7 @@ Inputs (all read-only, relative to the IFBench repository root)
     runs/feedback_eval/official/freeze.json           frozen protocol (selects the default overlays)
     runs/feedback_eval/sensitivity_empty_b0_16384/    rerun overlay (empty B0 -> 16384 tokens)
     runs/feedback_eval/probe_b3_32768/                rerun overlay (B3 -> 32768 tokens)
+    runs/feedback_eval/retry_recovered_20261116/      remaining empty/error recoveries (16384/32768)
     data/IFBench_test.jsonl                           official items, used to score overlay probes
     The merge is the project's own one (feedback_eval.cli._prepare_analysis_records ->
     analysis.overlay_records): an official identity is replaced only if the rerun has

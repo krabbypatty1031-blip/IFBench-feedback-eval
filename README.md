@@ -10,13 +10,13 @@
 
 | 模型 | B0 初始 | B1 自我检查 | B2 整体反馈 | B3 逐约束反馈 |
 |---|---:|---:|---:|---:|
-| gpt-4.1 | 138/259 (53.3%) | 146/258 (56.6%) | 163/258 (63.2%) | 153/257 (59.5%) |
-| gpt-4o | 148/259 (57.1%) | 157/255 (61.6%) | 174/258 (67.4%) | 167/255 (65.5%) |
+| gpt-4.1 | 138/259 (53.3%) | 146/259 (56.4%) | 163/259 (62.9%) | 153/259 (59.1%) |
+| gpt-4o | 148/259 (57.1%) | 157/259 (60.6%) | 174/259 (67.2%) | 168/259 (64.9%) |
 
-B2 相对 B0 的同题配对提升分别为 **9.69** 和 **10.08 个百分点**。内容审核覆盖全部 260 道测试题、两个模型和四种条件，共 2080 条回答：2033 条 complete、9 条 partial、17 条 incomplete、21 条 cannot_judge。完整表格及分母见[结果表](outputs/report_materials/RESULTS_TABLES.md)，具体回答见[案例](outputs/report_materials/CASE_STUDIES.md)。
+B2 相对 B0 的同题配对提升分别为 **9.65** 和 **10.04 个百分点**。内容审核覆盖全部 260 道测试题、两个模型和四种条件，共 2080 条回答：2046 条 complete、9 条 partial、17 条 incomplete、8 条 cannot_judge。把 complete 当作原任务正确后，B1/B2/B3 相对 B0 的内容完成率差异均不超过 0.77 个百分点，配对区间含零。完整表格及分母见[结果表](outputs/report_materials/RESULTS_TABLES.md)，具体回答见[案例](outputs/report_materials/CASE_STUDIES.md)。
 
-- 报告：**TODO：报告尚未生成，完成后添加链接。**
-- PPT：**TODO：PPT 尚未生成，完成后添加链接。**
+- 报告：[IEEE 草稿](report/report.tex)（本地编译 PDF 见 `report/build/report.pdf`；`build/` 被 Git 忽略）
+- PPT：[幻灯片](slides/slides.tex)、[讲稿](slides/speaker_notes.md)、[PDF](slides/slides.pdf)
 
 ## 目录结构
 
@@ -30,8 +30,11 @@ B2 相对 B0 的同题配对提升分别为 **9.69** 和 **10.08 个百分点**�
 ├── scripts/                      # 补跑、探测、重试和报告素材生成
 ├── tests/feedback_eval/          # 离线测试
 ├── outputs/report_materials/     # 最终结果表、案例和图表
+├── outputs/offline_analysis/     # 配对检验、稳健性和案例重评分
+├── report/                       # IEEE 报告源文件
+├── slides/                       # 答辩幻灯片
 ├── runs/feedback_eval/           # 本地产生的实验记录；不随 Git 发布
-├── docs/                         # 实验协议和运行手册
+├── docs/                         # 实验协议和运行手册（本地；已被 Git 忽略）
 ├── .env.example                  # 接口环境变量示例，无真实密钥
 ├── requirements.txt              # 上游部分依赖列表
 ├── pyproject.toml, uv.lock       # 项目依赖与锁定版本
@@ -134,7 +137,7 @@ export PYTHONDONTWRITEBYTECODE=1
 - B0：直接回答原题；B1：自行检查并修订；B2：根据整体通过／失败修订；B3：根据逐约束通过／失败及原题要求修订。三个修订条件独立使用同一份 B0。
 - 原始冻结：temperature 0、seed 42、max_tokens 4096；补跑主要为 16384，另有一次 32768 探测。HKBU Azure 请求不发送配置中的 `thinking` 字段。
 - 主指标为 strict 提示级通过率；附报 loose、修复率、退化率。配对 bootstrap 使用 1000 次重采样和种子 42。
-- 当前报告合并结果中 2059 条成功、11 条空回答、10 条错误；169 个身份由恢复结果替换。缺失不填补。
+- 当前报告合并结果中 2072 条成功、0 条空回答、8 条错误；**181** 个唯一身份由更高 token 上限的恢复结果替换（overlay 日志计 182 次替换事件，因为 gpt-4o item 200 B3 经历了 error→empty→success 两跳）。缺失不填补。剩下 8 条错误全部来自 item 147 的 Azure 内容过滤。
 
 ## 局限
 

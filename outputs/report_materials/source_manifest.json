@@ -1,14 +1,14 @@
 {
   "files": {
-    "runs/feedback_eval/official/freeze.json": "51ac42a7e541302ebf8eb49bf02cc56a40fe6bff0dabe6d50154930ae02020fe",
-    "runs/feedback_eval/official/analysis.json": "05f45112a4bb2685e29679f6704fbf535acb2c8052a0f891bc73a69586fcce46",
+    "runs/feedback_eval/official/freeze.json": "7050ad18926573246dbe6357f9c9d7892eafb2ea9f9616c9028dc24a2d86dcd3",
+    "runs/feedback_eval/official/analysis.json": "8df746cc45ee9b57116e1e05a013bce9a4f2783624580bd67a7894357b8bab2e",
     "configs/feedback_eval/homology.json": "3e111c283c426215f69efe44b1ef60e259bfb67c44ab52c213d679c475424548",
     "runs/feedback_eval/official/review_pack/judgments.csv": "94b81bf032239056036638ad68efb07f59ddf20a71b837927e51cc10ab1585ad",
     "runs/feedback_eval/official/review_pack/key.json": "38e8aad96cabde2816964b35e4bcfac2687c5c8e2c4d3490027f1572e8f0a38c",
     "runs/feedback_eval/official/review_pack/blinded.json": "22aae606aaefb6bba7beeb51e1045cfe617a99f09693a209e809c01d09d82c15",
-    "runs/feedback_eval/official/review_pack_remaining_220/judgments.csv": "ed13866463b276599b0353cf742a6d4aaf172d7e2ca2a1b7ceb9f4ccd1a87937",
+    "runs/feedback_eval/official/review_pack_remaining_220/judgments.csv": "0c5ab2411e038778a0ac8c5d3e194045a61f41dd35b3ad9420fd8513ff7d1584",
     "runs/feedback_eval/official/review_pack_remaining_220/key.json": "8457e9eaefdf0dac20d1c78960ba130703526f6a21ad4492b911681c335396be",
-    "runs/feedback_eval/official/review_pack_remaining_220/blinded.json": "55c4f32f10874a22554db790ab4d56137a68bb8c24c52b7d791cf47b44b0d275",
+    "runs/feedback_eval/official/review_pack_remaining_220/blinded.json": "8ff70ee4d2fb7f4e09e17082356e6670ebf774e5299fff38619189a83092a9e8",
     "runs/feedback_eval/official/records/0006aa67087eaab064dad690aad3870aff6eba01d4e1c569e7146c71cac32850.json": "fcceb851a7d3392e333473dfa1fb4a6980387991872279bf3d91f900295a635a",
     "runs/feedback_eval/official/records/003930587789e40e1784de093088e0753c6b7527cdd39a289419bf2784470339.json": "d69c6a22fc646d0c62fd111b7779111f3961def67a6d878eae46363b5e3a7358",
     "runs/feedback_eval/official/records/003e10c09c66eca3f13dbe7e85c7cec8dc79392c2796b2138cfcf5f31717a6ce.json": "074fe3e37e4dc9e49c3cdd2038cf5310526040000f756abf0ec278a816943214",
@@ -2257,7 +2257,20 @@
     "runs/feedback_eval/sensitivity_empty_b0_16384/records/fc6bb37e2470f69da43e51a25ef73392934472d48f07db5c6750f927e43177b1.json": "23957e5f82a2918af957438d980575452d3e9038f36a1329f69af7fd733b280d",
     "runs/feedback_eval/sensitivity_empty_b0_16384/records/fd7df22a337aa471200696e5cc98830e7989e92cfa6693fcedaccd95aed735ef.json": "1f01a899c6bc0e6c20747a587276349d04008c47006c4fd1cb0cfeae55efa12a",
     "runs/feedback_eval/sensitivity_empty_b0_16384/records/fe3a72475af34ca1f430f01fe5641320ed56abf77efe954235b94727b1777125.json": "a4466bf9588342be9e05eb079a54f97adce2e03dfc25fdec43062a39000631d6",
-    "runs/feedback_eval/probe_b3_32768/records/00_gpt-4o_200_B0.json": "694b79260774594b9c5b3c88f8b84600a013fa7a101ec51baedce6b25f557cc5"
+    "runs/feedback_eval/probe_b3_32768/records/00_gpt-4o_200_B0.json": "694b79260774594b9c5b3c88f8b84600a013fa7a101ec51baedce6b25f557cc5",
+    "runs/feedback_eval/retry_recovered_20261116/records/gpt-4.1_124_B3.json": "7468d72323529fd86c8d13596eefcb1db68c32ad772848a09e415b30f1f5102d",
+    "runs/feedback_eval/retry_recovered_20261116/records/gpt-4.1_168_B1.json": "b2dd3c60ea0bcb42d03672d5ece4122678ca3b5b1cf11e3a4c79384bfd8aac74",
+    "runs/feedback_eval/retry_recovered_20261116/records/gpt-4.1_168_B2.json": "fba39d566469f6b7afad62f8689c52df85d74e63a9a0254018bd00d2eee3f946",
+    "runs/feedback_eval/retry_recovered_20261116/records/gpt-4.1_168_B3.json": "daef174c915de9dc2591986e92fa99a81415ff170ba126396fab13f9dc436cd0",
+    "runs/feedback_eval/retry_recovered_20261116/records/gpt-4o_168_B1.json": "7021a83a12baeb119c18e4b8feeb1660de938b09d84cb4fc1cdf24dbe5c76c81",
+    "runs/feedback_eval/retry_recovered_20261116/records/gpt-4o_168_B2.json": "1e4dc9e035f26b2418bf49243031a91b99c20113f4f994826ad1525ee3c51a4b",
+    "runs/feedback_eval/retry_recovered_20261116/records/gpt-4o_168_B3.json": "4edb87e27596e23dc448b6819c07cf459e6ced73a54f240e8ab23fd9c0352120",
+    "runs/feedback_eval/retry_recovered_20261116/records/gpt-4o_203_B3.json": "0c81663f6a4de39951240405df0f5f40b8328ab4aa2dc9ff25660e4a980ab5da",
+    "runs/feedback_eval/retry_recovered_20261116/records/gpt-4o_205_B1.json": "a2f5d2377c83c704ede3aa3bbb4d29c6c7ae233c4043a85bbd3653cb8bee4ad2",
+    "runs/feedback_eval/retry_recovered_20261116/records/gpt-4o_205_B3.json": "326ef4bfb811c0cb20bb4e2d2085c232686ec709fd0261cb87ad46e151a3eaf6",
+    "runs/feedback_eval/retry_recovered_20261116/records/gpt-4o_227_B1.json": "8f0227e1afdf6216c75d0365a88328c430730beab223ad4b3510179449998225",
+    "runs/feedback_eval/retry_recovered_20261116/records/gpt-4o_81_B1.json": "636fca948088c6a56e32d72c6b545d9121ecf2eb8c72eabd5f46a78f1210a76b",
+    "runs/feedback_eval/retry_recovered_20261116/records/gpt-4o_81_B3.json": "c5679fe099d735f0603ee7257018bb1bc9c6dcebdf4111abee7d7270cca3925d"
   },
   "replaced": [
     {
@@ -3949,6 +3962,136 @@
       "from_max_tokens": 16384,
       "to_max_tokens": 32768,
       "source": "/Users/krabbypatty/Desktop/HKBU Resources/HKBU_Semester7/COMP4136/Final Project/IFBench/runs/feedback_eval/probe_b3_32768"
+    },
+    {
+      "model": "gpt-4.1",
+      "item_id": "124",
+      "condition": "B3",
+      "from_status": "error",
+      "to_status": "success",
+      "from_max_tokens": 4096,
+      "to_max_tokens": 4096,
+      "source": "/Users/krabbypatty/Desktop/HKBU Resources/HKBU_Semester7/COMP4136/Final Project/IFBench/runs/feedback_eval/retry_recovered_20261116"
+    },
+    {
+      "model": "gpt-4.1",
+      "item_id": "168",
+      "condition": "B1",
+      "from_status": "empty_response",
+      "to_status": "success",
+      "from_max_tokens": 4096,
+      "to_max_tokens": 16384,
+      "source": "/Users/krabbypatty/Desktop/HKBU Resources/HKBU_Semester7/COMP4136/Final Project/IFBench/runs/feedback_eval/retry_recovered_20261116"
+    },
+    {
+      "model": "gpt-4.1",
+      "item_id": "168",
+      "condition": "B2",
+      "from_status": "empty_response",
+      "to_status": "success",
+      "from_max_tokens": 4096,
+      "to_max_tokens": 32768,
+      "source": "/Users/krabbypatty/Desktop/HKBU Resources/HKBU_Semester7/COMP4136/Final Project/IFBench/runs/feedback_eval/retry_recovered_20261116"
+    },
+    {
+      "model": "gpt-4.1",
+      "item_id": "168",
+      "condition": "B3",
+      "from_status": "empty_response",
+      "to_status": "success",
+      "from_max_tokens": 4096,
+      "to_max_tokens": 16384,
+      "source": "/Users/krabbypatty/Desktop/HKBU Resources/HKBU_Semester7/COMP4136/Final Project/IFBench/runs/feedback_eval/retry_recovered_20261116"
+    },
+    {
+      "model": "gpt-4o",
+      "item_id": "168",
+      "condition": "B1",
+      "from_status": "empty_response",
+      "to_status": "success",
+      "from_max_tokens": 4096,
+      "to_max_tokens": 16384,
+      "source": "/Users/krabbypatty/Desktop/HKBU Resources/HKBU_Semester7/COMP4136/Final Project/IFBench/runs/feedback_eval/retry_recovered_20261116"
+    },
+    {
+      "model": "gpt-4o",
+      "item_id": "168",
+      "condition": "B2",
+      "from_status": "empty_response",
+      "to_status": "success",
+      "from_max_tokens": 4096,
+      "to_max_tokens": 16384,
+      "source": "/Users/krabbypatty/Desktop/HKBU Resources/HKBU_Semester7/COMP4136/Final Project/IFBench/runs/feedback_eval/retry_recovered_20261116"
+    },
+    {
+      "model": "gpt-4o",
+      "item_id": "168",
+      "condition": "B3",
+      "from_status": "empty_response",
+      "to_status": "success",
+      "from_max_tokens": 4096,
+      "to_max_tokens": 16384,
+      "source": "/Users/krabbypatty/Desktop/HKBU Resources/HKBU_Semester7/COMP4136/Final Project/IFBench/runs/feedback_eval/retry_recovered_20261116"
+    },
+    {
+      "model": "gpt-4o",
+      "item_id": "203",
+      "condition": "B3",
+      "from_status": "empty_response",
+      "to_status": "success",
+      "from_max_tokens": 4096,
+      "to_max_tokens": 16384,
+      "source": "/Users/krabbypatty/Desktop/HKBU Resources/HKBU_Semester7/COMP4136/Final Project/IFBench/runs/feedback_eval/retry_recovered_20261116"
+    },
+    {
+      "model": "gpt-4o",
+      "item_id": "205",
+      "condition": "B1",
+      "from_status": "empty_response",
+      "to_status": "success",
+      "from_max_tokens": 4096,
+      "to_max_tokens": 32768,
+      "source": "/Users/krabbypatty/Desktop/HKBU Resources/HKBU_Semester7/COMP4136/Final Project/IFBench/runs/feedback_eval/retry_recovered_20261116"
+    },
+    {
+      "model": "gpt-4o",
+      "item_id": "205",
+      "condition": "B3",
+      "from_status": "empty_response",
+      "to_status": "success",
+      "from_max_tokens": 4096,
+      "to_max_tokens": 16384,
+      "source": "/Users/krabbypatty/Desktop/HKBU Resources/HKBU_Semester7/COMP4136/Final Project/IFBench/runs/feedback_eval/retry_recovered_20261116"
+    },
+    {
+      "model": "gpt-4o",
+      "item_id": "227",
+      "condition": "B1",
+      "from_status": "error",
+      "to_status": "success",
+      "from_max_tokens": 4096,
+      "to_max_tokens": 4096,
+      "source": "/Users/krabbypatty/Desktop/HKBU Resources/HKBU_Semester7/COMP4136/Final Project/IFBench/runs/feedback_eval/retry_recovered_20261116"
+    },
+    {
+      "model": "gpt-4o",
+      "item_id": "81",
+      "condition": "B1",
+      "from_status": "empty_response",
+      "to_status": "success",
+      "from_max_tokens": 4096,
+      "to_max_tokens": 16384,
+      "source": "/Users/krabbypatty/Desktop/HKBU Resources/HKBU_Semester7/COMP4136/Final Project/IFBench/runs/feedback_eval/retry_recovered_20261116"
+    },
+    {
+      "model": "gpt-4o",
+      "item_id": "81",
+      "condition": "B3",
+      "from_status": "empty_response",
+      "to_status": "success",
+      "from_max_tokens": 4096,
+      "to_max_tokens": 16384,
+      "source": "/Users/krabbypatty/Desktop/HKBU Resources/HKBU_Semester7/COMP4136/Final Project/IFBench/runs/feedback_eval/retry_recovered_20261116"
     }
   ]
 }

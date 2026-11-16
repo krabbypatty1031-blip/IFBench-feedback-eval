@@ -359,13 +359,126 @@ def _percentile(values: list[float], p: float) -> float | None:
     return ordered[low] * (1.0 - weight) + ordered[high] * weight
 
 
+def content_complete_flag(label: str | None) -> bool | None:
+    """Map a content-review label onto a scorable binary outcome.
+
+    `complete` is the content analogue of a pass. `partial` and `incomplete`
+    are judged failures of the original task. `cannot_judge` is missing, not a
+    content fail, matching `report_missing_do_not_impute`.
+    """
+    if not label or label == "cannot_judge":
+        return None
+    return label == "complete"
+
+
+def make_content_flag(
+    labels: dict[tuple[str, str, str], str],
+) -> Any:
+    """Return a bootstrap/summarize flag that reads blinded content labels."""
+
+    def flag_fn(record: dict[str, Any] | None) -> bool | None:
+        if not record:
+            return None
+        return content_complete_flag(labels.get(_identity(record)))
+
+    return flag_fn
+
+
+def summarize_content(
+    records: list[dict[str, Any]],
+    labels: dict[tuple[str, str, str], str],
+) -> dict[str, Any]:
+    """Paired content-complete rates and repair/regress. Missing stays missing."""
+    flag_fn = make_content_flag(labels)
+    by = _index_by_model_item(records)
+    by_model: dict[str, Any] = {}
+    for model in sorted({m for m, _ in by}):
+        items = sorted({item_id for m, item_id in by if m == model})
+        complete_prompt: dict[str, dict[str, int]] = {}
+        repair: dict[str, dict[str, int]] = {}
+        regress: dict[str, dict[str, int]] = {}
+        paired_ids: dict[str, list[str]] = {}
+        for item_id in items:
+            conds = by[(model, item_id)]
+            b0 = conds.get("B0")
+            for condition in CONDITIONS:
+                rec = conds.get(condition)
+                passed = flag_fn(rec)
+                complete_prompt.setdefault(condition, {"n": 0, "d": 0})
+                if passed is not None:
+                    complete_prompt[condition]["d"] += 1
+                    complete_prompt[condition]["n"] += int(passed)
+            for condition in ("B1", "B2", "B3"):
+                bx = conds.get(condition)
+                b0_flag = flag_fn(b0)
+                bx_flag = flag_fn(bx)
+                repair.setdefault(condition, {"n": 0, "d": 0})
+                regress.setdefault(condition, {"n": 0, "d": 0})
+                paired_ids.setdefault(condition, [])
+                if b0_flag is None or bx_flag is None:
+                    continue
+                paired_ids[condition].append(item_id)
+                if b0_flag is False:
+                    repair[condition]["d"] += 1
+                    repair[condition]["n"] += int(bx_flag is True)
+                if b0_flag is True:
+                    regress[condition]["d"] += 1
+                    regress[condition]["n"] += int(bx_flag is False)
+        by_model[model] = {
+            "n_items": len(items),
+            "complete_prompt": {
+                condition: rate(vals["n"], vals["d"])
+                for condition, vals in complete_prompt.items()
+            },
+            "repair": {
+                condition: rate(vals["n"], vals["d"]) for condition, vals in repair.items()
+            },
+            "regress": {
+                condition: rate(vals["n"], vals["d"])
+                for condition, vals in regress.items()
+            },
+            "paired_item_ids": paired_ids,
+        }
+        logger.info(
+            "Content summary model=%s B0=%s B1=%s B2=%s B3=%s",
+            model,
+            by_model[model]["complete_prompt"].get("B0"),
+            by_model[model]["complete_prompt"].get("B1"),
+            by_model[model]["complete_prompt"].get("B2"),
+            by_model[model]["complete_prompt"].get("B3"),
+        )
+    return {
+        "n_records": len(records),
+        "n_labels": len(labels),
+        "criterion": "complete_vs_not_complete_among_judged",
+        "missing_data_rule": "report_missing_do_not_impute",
+        "by_model": by_model,
+        "note": (
+            "Content accuracy is original-task completion from the single-rater "
+            "review, not IFBench strict/loose. Partial and incomplete count as "
+            "not complete."
+        ),
+    }
+
+
 def bootstrap_paired_diffs(
     records: list[dict[str, Any]],
     n_resamples: int = _DEFAULT_BOOTSTRAP,
     seed: int = 42,
     groups: list[list[str]] | None = None,
+    flag_fn: Any | None = None,
+    result_key: str = "strict_prompt_diff",
+    ref: str = "B0",
+    targets: tuple[str, ...] = ("B1", "B2", "B3"),
 ) -> dict[str, Any]:
-    """Item- or homology-clustered bootstrap of Bx minus B0 strict prompt rates."""
+    """Item- or homology-clustered bootstrap of target minus ref binary rates.
+
+    `flag_fn` defaults to official strict prompt pass. Pass `make_content_flag`
+    to pair content-complete labels the same way. `targets` default to B1–B3
+    versus B0 so existing official tables stay unchanged.
+    """
+    if flag_fn is None:
+        flag_fn = _strict_pass
     by = _index_by_model_item(records)
     group_of: dict[str, str] = {}
     for index, ids in enumerate(groups or []):
@@ -377,20 +490,20 @@ def bootstrap_paired_diffs(
     for model in sorted({m for m, _ in by}):
         # Cluster usable pairs by homology group, else by item id.
         clustered: dict[str, dict[str, list[tuple[bool, bool]]]] = defaultdict(
-            lambda: {c: [] for c in ("B1", "B2", "B3")}
+            lambda: {c: [] for c in targets}
         )
         items = sorted({item_id for m, item_id in by if m == model})
         for item_id in items:
             conds = by[(model, item_id)]
-            b0 = _strict_pass(conds.get("B0"))
+            left = flag_fn(conds.get(ref))
             cluster = group_of.get(item_id, f"item:{item_id}")
-            for condition in ("B1", "B2", "B3"):
-                bx = _strict_pass(conds.get(condition))
-                if b0 is None or bx is None:
+            for condition in targets:
+                right = flag_fn(conds.get(condition))
+                if left is None or right is None:
                     continue
-                clustered[cluster][condition].append((b0, bx))
+                clustered[cluster][condition].append((left, right))
         model_block: dict[str, Any] = {}
-        for condition in ("B1", "B2", "B3"):
+        for condition in targets:
             unit_ids = [cid for cid, payload in clustered.items() if payload[condition]]
             n_pairs = sum(len(clustered[cid][condition]) for cid in unit_ids)
 
@@ -414,7 +527,7 @@ def bootstrap_paired_diffs(
                     if value is not None:
                         draws.append(value)
             model_block[condition] = {
-                "strict_prompt_diff": {
+                result_key: {
                     "n_units": len(unit_ids),
                     "n_pairs": n_pairs,
                     "point": point,
@@ -425,6 +538,99 @@ def bootstrap_paired_diffs(
                 }
             }
         out[model] = model_block
+    logger.info(
+        "Bootstrap paired diffs models=%s result_key=%s n_resamples=%s",
+        list(out),
+        result_key,
+        n_resamples,
+    )
+    return out
+
+
+def homology_group_of(groups: list[list[str]] | None) -> dict[str, str]:
+    """Map item id to a cluster label; ungrouped items stay item-level."""
+    group_of: dict[str, str] = {}
+    for index, ids in enumerate(groups or []):
+        label = f"g{index}"
+        for item_id in ids:
+            group_of[str(item_id)] = label
+    return group_of
+
+
+def exact_cluster_sign_flip(
+    pairs: list[tuple[str, int]],
+    group_of: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Two-sided exact sign-flip p-value on clustered paired differences.
+
+    Each homology group (else each item) is one exchangeable unit. The
+    statistic is the absolute sum of paired deltas. Post-hoc: not a
+    freeze-time family.
+    """
+    grouped: dict[str, int] = defaultdict(int)
+    mapping = group_of or {}
+    for item_id, delta in pairs:
+        grouped[mapping.get(str(item_id), f"item:{item_id}")] += int(delta)
+    weights = [abs(value) for value in grouped.values() if value]
+    dist: dict[int, int] = {0: 1}
+    for weight in weights:
+        nxt: dict[int, int] = defaultdict(int)
+        for total, count in dist.items():
+            nxt[total + weight] += count
+            nxt[total - weight] += count
+        dist = nxt
+    observed = abs(sum(delta for _, delta in pairs))
+    n_enum = 2 ** len(weights) if weights else 1
+    n_extreme = sum(count for total, count in dist.items() if abs(total) >= observed)
+    p_value = n_extreme / n_enum
+    logger.info(
+        "Sign-flip n_pairs=%s n_clusters=%s nonzero=%s observed=%s p=%.5f",
+        len(pairs),
+        len(grouped),
+        len(weights),
+        observed,
+        p_value,
+    )
+    return {
+        "n_pairs": len(pairs),
+        "n_clusters": len(grouped),
+        "nonzero_clusters": len(weights),
+        "observed_abs_sum": observed,
+        "p": p_value,
+    }
+
+
+def holm_adjust(entries: list[dict[str, Any]], p_key: str = "p") -> list[dict[str, Any]]:
+    """In-place Holm correction; returns the same objects in original order."""
+    ordered = sorted(entries, key=lambda row: float(row[p_key]))
+    previous = 0.0
+    n = len(ordered)
+    for rank, row in enumerate(ordered):
+        previous = max(previous, min(1.0, (n - rank) * float(row[p_key])))
+        row["holm_p"] = previous
+    return entries
+
+
+def paired_binary_deltas(
+    records: list[dict[str, Any]],
+    model: str,
+    ref: str,
+    target: str,
+    flag_fn: Any | None = None,
+) -> list[tuple[str, int]]:
+    """(item_id, target-minus-ref) for identities scorable in both conditions."""
+    if flag_fn is None:
+        flag_fn = _strict_pass
+    by = _index_by_model_item(records)
+    out: list[tuple[str, int]] = []
+    items = sorted({item_id for m, item_id in by if m == model})
+    for item_id in items:
+        conds = by[(model, item_id)]
+        left = flag_fn(conds.get(ref))
+        right = flag_fn(conds.get(target))
+        if left is None or right is None:
+            continue
+        out.append((item_id, int(right) - int(left)))
     return out
 
 
