@@ -1,158 +1,168 @@
-# IFBench 反馈修订实验
+# IFBench 验证器反馈修订实验
 
 ## 项目简介
 
-本项目是香港浸会大学（HKBU）COMP4136 自然语言处理课程实验。我们基于 IFBench [1]，比较模型自行检查和不同粒度的验证器反馈，是否能提高对输出约束的遵循；同时检查回答是否完成原始任务。项目通过 HKBU GenAI 接口调用模型，不进行本地训练。
+本项目是香港浸会大学（HKBU）COMP4136 Natural Language Processing 课程 mini-project。我们在 IFBench [2] 上比较三种单轮修订方式：自行检查、接收整体通过／失败反馈、接收逐条约束反馈。我们用官方验证器检查输出约束，并通过人工内容审核判断回答是否完成了原始任务。
 
 ## 主要结果
 
-下表为当前合并结果的 strict 提示级通过率（通过数/可评分数）。每道题的全部约束均通过才算通过。
+主指标是 **strict 提示级通过率**。一条回答必须满足该题的全部可验证约束才算通过。下表以各条件的可评分回答为分母，使用补跑合并后的最终结果。
 
-| 模型 | B0 初始 | B1 自我检查 | B2 整体反馈 | B3 逐约束反馈 |
-|---|---:|---:|---:|---:|
-| gpt-4.1 | 138/259 (53.3%) | 146/259 (56.4%) | 163/259 (62.9%) | 153/259 (59.1%) |
-| gpt-4o | 148/259 (57.1%) | 157/259 (60.6%) | 174/259 (67.2%) | 168/259 (64.9%) |
+| 模型 | B0 原回答 | B1 自我修订 | B2 整体反馈 | B3 逐约束反馈 |
+| --- | ---: | ---: | ---: | ---: |
+| gpt-4.1 | 138/259 (53.3%) | 146/259 (56.4%) | **163/259 (62.9%)** | 153/259 (59.1%) |
+| gpt-4o | 148/259 (57.1%) | 157/259 (60.6%) | **174/259 (67.2%)** | 168/259 (64.9%) |
 
-B2 相对 B0 的同题配对提升分别为 **9.65** 和 **10.04 个百分点**。内容审核覆盖全部 260 道测试题、两个模型和四种条件，共 2080 条回答：2046 条 complete、9 条 partial、17 条 incomplete、8 条 cannot_judge。把 complete 当作原任务正确后，B1/B2/B3 相对 B0 的内容完成率差异均不超过 0.77 个百分点，配对区间含零。完整表格及分母见[结果表](outputs/report_materials/RESULTS_TABLES.md)，具体回答见[案例](outputs/report_materials/CASE_STUDIES.md)。
+- **B2 相比 B0**，同题配对的通过率分别提高 **9.65** 和 **10.04 个百分点**。两项提升在事后同源组符号翻转检验中经 Holm 校正后均达到统计显著。两个模型的 B2 与 B3 直接比较均未检出显著差异。
+- **B2 相比 B1**，两个模型均修复了更多初始失败的回答，也让更少初始通过的回答在修订后失败。
+- **人工审核**覆盖全部 260 道测试题的 2,080 个题目、模型与条件组合，其中 2,072 条回答可供判断。**818 条**完成了任务但未通过 strict，**19 条**通过 strict 却只完成了部分任务或未完成。各修订条件相对 B0 的内容完成率差异在 Holm 校正后均未达到统计显著。
 
-- 报告：[IEEE 草稿](report/report.tex)（本地编译 PDF 见 `report/build/report.pdf`；`build/` 被 Git 忽略）
-- PPT 旧版归档：[幻灯片](slides/archive/2026-11-16_before_redesign/slides.tex)、[讲稿](slides/archive/2026-11-16_before_redesign/speaker_notes.md)、[PDF](slides/archive/2026-11-16_before_redesign/slides.pdf)
+[完整结果表与图表](outputs/report_materials/README.md) · [案例原文](outputs/report_materials/CASE_STUDIES.md) · [配对检验与稳健性分析](outputs/offline_analysis/README.md)
 
 ## 目录结构
 
 ```text
 .
-├── data/IFBench_test.jsonl       # 指定的原始数据
-├── ifbench/                      # IFBench 约束与验证器
-├── evaluation_lib.py             # 官方 strict / loose 评分
-├── feedback_eval/                # 数据划分、生成、反馈、存储及分析
-├── configs/feedback_eval/        # 划分、提示、模型和运行参数
-├── scripts/                      # 补跑、探测、重试和报告素材生成
-├── tests/feedback_eval/          # 离线测试
-├── outputs/report_materials/     # 最终结果表、案例和图表
-├── outputs/offline_analysis/     # 配对检验、稳健性和案例重评分
-├── report/                       # IEEE 报告源文件
-├── slides/                       # 答辩幻灯片
-├── runs/feedback_eval/           # 本地产生的实验记录；不随 Git 发布
-├── docs/                         # 实验协议和运行手册（本地；已被 Git 忽略）
-├── .env.example                  # 接口环境变量示例，无真实密钥
-├── requirements.txt              # 上游部分依赖列表
-├── pyproject.toml, uv.lock       # 项目依赖与锁定版本
-└── LICENSE                       # 上游代码许可证
+├── data/IFBench_test.jsonl    # 固定版本的 IFBench 数据
+├── ifbench/                   # 上游约束与验证器
+├── evaluation_lib.py          # 官方 strict / loose 评分入口
+├── configs/feedback_eval/     # 数据划分、同源组、提示词和运行设置
+├── feedback_eval/             # 生成、反馈、记录和配对分析
+├── scripts/                   # 补跑、离线分析和素材生成
+├── outputs/
+│   ├── report_materials/      # 最终表格、汇总 JSON、案例和图表
+│   └── offline_analysis/      # 检验、稳健性和案例重评分结果
+├── .env.example               # 本地接口配置模板
+└── pyproject.toml / uv.lock    # 依赖声明与版本锁定
 ```
 
-`runs/`、`.env` 和本地 NLTK 数据被 Git 忽略。**TODO：正式实验记录、补跑记录和审核标签尚未随仓库发布；仅 clone 不能精确重建表中的既有数字。** 在公布数据包并记录其获取位置之前，可用本仓库代码重新运行实验，但不能声称新生成结果与原结果完全相同。
+逐条运行记录、补跑记录和原始审核包保存在本地 `runs/feedback_eval/`。
 
 ## 环境配置
 
-已使用 Python **3.11.15**。本地验证和评分使用 CPU，不需要 GPU；真实模型调用需要网络、HKBU GenAI 权限及个人 API key。
-
-`requirements.txt` 是上游部分依赖列表，未包含完整课程实验依赖；优先使用 `pyproject.toml` 和 `uv.lock` 安装。需先自行安装 [uv](https://docs.astral.sh/uv/)。
+已验证 Python **3.11.15**。本地验证、评分与统计只需要 CPU。用 [uv](https://docs.astral.sh/uv/getting-started/installation/) 安装 [uv.lock](uv.lock) 锁定的依赖，包括 NLTK **3.9.2** 和 HTTPX **0.28.1**。[requirements.txt](requirements.txt) 列出部分上游依赖。
 
 ```bash
-uv sync --locked
+uv sync --locked --python 3.11
+export NLTK_DATA="$PWD/ifbench/.nltk_data"
+uv run --no-sync python -m nltk.downloader -d "$NLTK_DATA" \
+  punkt punkt_tab stopwords averaged_perceptron_tagger_eng
 ```
 
-输入：`pyproject.toml`、`uv.lock`；输出：`.venv/`。API 费用：0。**验证状态：本机已验证锁文件离线 dry-run，未在全新环境完成联网安装；TODO：验证干净环境安装。**
+依赖安装到 `.venv/`，NLTK 资源存放在 `ifbench/.nltk_data/`。安装需要网络，无模型 API 费用。已有 NLTK 资源时，可将 `NLTK_DATA` 指向其目录。仅核对已保存的汇总可直接用标准库 Python。
 
-以 `.env.example` 为模板建立本地 `.env`，填写自己的接口配置。示例中的模型和参数属于上游默认值；本实验以 `configs/feedback_eval/official.yaml` 为准。不要提交 `.env` 或密钥。
+运行真实模型前，根据 [环境变量模板](.env.example) 创建本地配置，并将 `API_KEY` 设置为自己的 HKBU GenAI 密钥。网关和模型由 [official.yaml](configs/feedback_eval/official.yaml) 指定。
 
 ```bash
 cp -n .env.example .env
 ```
 
-输入：`.env.example`；输出：本地 `.env`（已存在时不覆盖）。API 费用：0。将本地配置设为 `API_PROVIDER=azure`，按实际校园接口填写 `API_BASE`、`API_KEY`、`MODEL_A=gpt-4.1`、`MODEL_B=gpt-4o`；费用授权使用 `FEEDBACK_EVAL_AUTHORIZE_SPEND=1`。接口具体权限由使用者确认。
-
 ## 数据获取
 
-数据来自 [IFBench 上游固定版本](https://github.com/allenai/IFBench/blob/cd189a9c2889526d8af901d2103fd3e1ffcea6df/data/IFBench_test.jsonl)，放在 `data/IFBench_test.jsonl`。当前版本已在仓库中跟踪；如果缺失，可从上述版本获取。不要混用 `ifbench/data/IFBench_test.jsonl`：其文件哈希不同。
-
-期望 SHA-256：`d2ada7da94a38cfe406351614c4e686846ed2da6d1b339db95fa5ead19554a4a`。数据许可证为 ODC-BY-1.0；使用数据和第三方模型输出时应遵守上游署名及其他适用条款 [2]。
+[固定版本的 IFBench 数据](https://github.com/allenai/IFBench/blob/cd189a9c2889526d8af901d2103fd3e1ffcea6df/data/IFBench_test.jsonl)已保存在 `data/IFBench_test.jsonl`。实验使用[冻结划分](configs/feedback_eval/split.json)，300 道题中有 40 道开发题、260 道测试题，同源题按组划分。数据使用 ODC-BY 1.0 许可，详见[上游项目][ifbench-repo]。
 
 ```bash
 shasum -a 256 data/IFBench_test.jsonl
 ```
 
-输入：数据文件；输出：SHA-256，须与上面的值一致。API 费用：0。**TODO：当前环境无法连接上游 raw 下载端点，尚未验证远程下载文件的字节哈希。**
-
-NLTK 资源不随仓库发布。首次运行需联网下载 `punkt`、`punkt_tab`、`stopwords`、`averaged_perceptron_tagger_eng`；上游验证器在导入时会尝试获取缺失资源。设置 NLTK 目录：
-
-```bash
-export NLTK_DATA="$PWD/ifbench/.nltk_data"
-export PYTHONDONTWRITEBYTECODE=1
-```
-
-输入：当前仓库路径；输出：当前 shell 环境变量。API 费用：0。**TODO：在全新环境核实 NLTK 资源下载。**
+SHA-256 应为 `d2ada7da94a38cfe406351614c4e686846ed2da6d1b339db95fa5ead19554a4a`。
 
 ## 复现步骤
 
-以下命令从仓库根目录运行。实验生成、补跑及人工审核会产生新的记录；本次实验的既有记录目前未随 Git 发布。
+从仓库根目录执行。clone 后可以直接核对已发布的汇总、离线验证流程，也可以用自己的网关权限重新生成一批回答，并进行评分和人工审核。精确重建原实验需要历史逐条记录和原始审核包，见第 5 步。
 
-1. **离线小样本检查**。使用假客户端，不调用真实模型。输入：`official.yaml` 和模拟题目；输出：临时目录中的 B0–B3 记录及对账摘要；API 费用：0。
-
-   ```bash
-   .venv/bin/python -m feedback_eval.cli run-official --offline --n-items 2 --store-dir /tmp/ifbench-readme-offline
-   ```
-
-   若该目录已存在，改用一个新的空目录。这里的样本为合成题，并非正式测试结果。
-
-2. **正式生成**。输入：`data/IFBench_test.jsonl`、`configs/feedback_eval/official.yaml`、提示模板及自己的接口配置；输出：新目录 `runs/feedback_eval/new_official/` 中的冻结信息、账本和逐条记录。该步骤会调用 API；**大致费用：TODO，校园接口单价和扣款未核实**。
+1. **核对最终主表。** 读取 [results.json](outputs/report_materials/results.json)，输出每个模型与条件的 strict 分子、分母和通过率。无需 API。
 
    ```bash
-   FEEDBACK_EVAL_AUTHORIZE_SPEND=1 .venv/bin/python -m feedback_eval.cli run-official --paid --config configs/feedback_eval/official.yaml --store-dir runs/feedback_eval/new_official
+   python3 - <<'PY'
+   import json
+   from pathlib import Path
+
+   results = json.loads(Path("outputs/report_materials/results.json").read_text())
+   for row in results["tables"]:
+       score = row["strict_prompt"]
+       print(row["model"], row["condition"], f"{score['n']}/{score['d']}", f"{score['value']:.1%}")
+   PY
    ```
 
-   使用新的空目录；不要覆盖已有 `official/`。该命令需要有效接口和授权，本 README 的离线验证没有实际执行付费生成。
-
-3. **空回答补跑**。原实验将选出的空 B0 模型／题目及其分支单独补跑。输入：上一步的原始记录和 `sensitivity_empty_b0_16384.yaml`；输出：独立补跑目录；API 费用：**TODO，未核实**。
+2. **离线小样本验证。** 使用冻结配置与合成样本。模拟客户端执行 B0–B3，在临时目录生成逐条记录和 `analysis.json`。无需 API。
 
    ```bash
-   .venv/bin/python scripts/run_empty_b0_16384.py --paid --official-dir runs/feedback_eval/new_official --out-dir runs/feedback_eval/new_sensitivity --config configs/feedback_eval/sensitivity_empty_b0_16384.yaml
+   smoke_dir=$(mktemp -d /tmp/ifbench-smoke.XXXXXX)
+   uv run --no-sync python -m feedback_eval.cli run-official \
+     --offline --n-items 2 --store-dir "$smoke_dir"
+   uv run --no-sync python -m feedback_eval.cli analyze \
+     --store-dir "$smoke_dir" --no-overlay
    ```
 
-   此命令需要实际产生空 B0、有效接口和授权；未在本次验证中进行付费调用。原实验另有更高上限的恢复正文，已并入 overlay 目录 `retry_recovered_20261116/`。
-
-4. **分析新结果**。输入：新运行记录及补跑目录；输出：新运行目录中的 `analysis.json` 和 `overlay_manifest.json`；API 费用：0。使用明确的 `--overlay`，避免混入本机其他实验。
+3. **重新生成正式测试回答。** 输入为冻结测试划分、正式配置、提示词及自己的接口配置。输出到新的 `runs/feedback_eval/new_official/`，包括冻结配置、逐条记录和运行摘要。会调用模型 API，费用取决于网关计费与配额，金额 **TODO**。
 
    ```bash
-   .venv/bin/python -m feedback_eval.cli analyze --store-dir runs/feedback_eval/new_official --overlay runs/feedback_eval/new_sensitivity
+   FEEDBACK_EVAL_AUTHORIZE_SPEND=1 uv run --no-sync python -m feedback_eval.cli \
+     run-official --paid --config configs/feedback_eval/official.yaml \
+     --store-dir runs/feedback_eval/new_official
    ```
 
-   `analyze` 会覆盖目标目录中的分析文件；该命令依赖第 2、3 步产生的记录，未对新付费运行执行验证。
-
-5. **内容审核**。现行协议覆盖测试集全部 260 题。对新的运行目录生成审核包：输入为记录及冻结配置；输出为 `review_pack/blinded.json`、`key.json` 和 `judgments.csv`；API 费用：0。本仓库正式结果使用全量 2080 条标签。
+   如果新运行出现空 B0，可按题目和模型以 16,384 token 的上限补跑。该命令另建输出目录并调用模型 API，费用 **TODO**。
 
    ```bash
-   .venv/bin/python -m feedback_eval.cli review-pack --store-dir runs/feedback_eval/new_official --overlay runs/feedback_eval/new_sensitivity
+   FEEDBACK_EVAL_AUTHORIZE_SPEND=1 uv run --no-sync python scripts/run_empty_b0_16384.py \
+     --paid --official-dir runs/feedback_eval/new_official \
+     --out-dir runs/feedback_eval/new_sensitivity \
+     --config configs/feedback_eval/sensitivity_empty_b0_16384.yaml
    ```
 
-   按 [审核协议](docs/feedback_eval_review.md) 完成标注，再揭盲。**不要在已有标签的目录再次运行：该命令会覆盖 `judgments.csv`。** 原实验完整审核标签尚未公开，因此无法由 clone 独立重算现有内容审核数字。上述命令依赖第 2、3 步的真实输出，未对新付费运行执行验证。
+4. **分析新记录并生成盲审包。** 输入为第 3 步的逐条记录。第一个命令输出 strict、loose、修复率、退化率和配对差异至 `analysis.json`。第二个命令生成 `blinded.json`、`key.json` 和待填的 `judgments.csv`。无需 API。
 
-已发布的[最终结果表](outputs/report_materials/RESULTS_TABLES.md)和四张 PNG/SVG 图可直接查看。`scripts/build_report_materials.py` 当前依赖未发布的原始 `runs/` 记录及审核包，不能仅从 clone 重建；**TODO：发布经许可审查的记录并验证重建命令。**
+   ```bash
+   uv run --no-sync python -m feedback_eval.cli analyze \
+     --store-dir runs/feedback_eval/new_official --no-overlay
+   uv run --no-sync python -m feedback_eval.cli review-pack \
+     --store-dir runs/feedback_eval/new_official --no-overlay \
+     --out-dir runs/feedback_eval/new_review
+   ```
+
+   如需纳入补跑结果，在两个命令中都用 `--overlay runs/feedback_eval/new_sensitivity` 替换 `--no-overlay`。用新的目录生成审核包，避免覆盖已经填写的标签。审核按原任务完成情况标为 `complete`、`partial`、`incomplete` 或 `cannot_judge`。先标注，再用 `key.json` 匹配模型和条件。
+
+5. **重建原实验合并结果。** 原始记录在 `runs/feedback_eval/official/`，两批原始审核包在其中的 `review_pack/` 和 `review_pack_remaining_220/`。重建时使用与最终正文对应的标签，并按下面的顺序合并、检验和生成结果表。命令会重写相应的分析产物，适合在历史记录的副本上运行。无需 API。
+
+   ```bash
+   uv run --no-sync python -m feedback_eval.cli analyze \
+     --store-dir runs/feedback_eval/official \
+     --overlay runs/feedback_eval/sensitivity_empty_b0_16384 \
+     --overlay runs/feedback_eval/retry_recovered_20261116
+   uv run --no-sync python scripts/offline_report_analysis.py
+   uv run --no-sync python scripts/build_report_materials.py
+   ```
+
+   输出分别为运行目录下的 `analysis.json`、`outputs/offline_analysis/` 下的检验结果，以及 `outputs/report_materials/` 下的结果表和案例。仓库已包含[全量审核汇总](outputs/report_materials/content_review_all_260.json)、[后 220 道题的标签表](outputs/report_materials/content_review_remaining_220.csv)和[输入文件清单](outputs/report_materials/source_manifest.json)。完整历史回答与原始审核包的获取方式 **TODO**。
 
 ## 实验设置
 
-- 数据：300 题，40 题开发、260 题测试；已确认同源题按组划分，种子 42。
-- 模型：HKBU GenAI `gpt-4.1`、`gpt-4o`；模型版本与服务端状态依赖接口。
-- B0：直接回答原题；B1：自行检查并修订；B2：根据整体通过／失败修订；B3：根据逐约束通过／失败及原题要求修订。三个修订条件独立使用同一份 B0。
-- 原始冻结：temperature 0、seed 42、max_tokens 4096；补跑主要为 16384，另有一次 32768 探测。HKBU Azure 请求不发送配置中的 `thinking` 字段。
-- 主指标为 strict 提示级通过率；附报 loose、修复率、退化率。配对 bootstrap 使用 1000 次重采样和种子 42。
-- 当前报告合并结果中 2072 条成功、0 条空回答、8 条错误；**181** 个唯一身份由更高 token 上限的恢复结果替换（overlay 日志计 182 次替换事件，因为 gpt-4o item 200 B3 经历了 error→empty→success 两跳）。缺失不填补。剩下 8 条错误全部来自 item 147 的 Azure 内容过滤。
+- **模型与条件**。HKBU GenAI 上的 `gpt-4.1` 和 `gpt-4o`。B0 直接回答原题；B1 自行检查；B2 接收整体 strict 判定；B3 接收逐条约束判定和对应要求。三个修订分支各运行一次，独立使用同一份 B0。B2 和 B3 在 B0 通过时收到允许保留原答的提示。
+- **生成与恢复**。原始设置为 temperature `0`、seed `42`、最大输出 `4096` token。选定的空答或错误记录以 `16384` 或 `32768` token 补跑。最终合并数据有 2,072 条可评分回答和 8 条错误，缺失值不填补。
+- **评测与统计**。修复率只看 B0 未通过的配对，退化率只看 B0 已通过的配对。配对区间使用同源组 bootstrap（1,000 次，seed `42`）。显著性使用事后同源组符号翻转检验与 Holm 校正。
 
 ## 局限
 
-公开 IFBench 数据是否出现在模型训练集中未知；两个模型不足以代表所有模型。远程 API 和模型可能变化，种子不保证重新生成的文本完全一致。混合补跑后的设置与原始冻结设置不同，需要报告来源和分母。内容审核覆盖 260 道测试题的 2080 条配对回答，不是 2080 道独立题；现有单人标注不能估计评分者间一致性。规则通过率不能替代完整性或事实准确性评价。当前仓库未提供完整原始记录与审核标签，精确复现既有表格仍有缺口。
+B2 和 B3 对已通过的 B0 有明确的保留原答提示，B1 与 B2 的差异反映整套修订策略。测试集中 220 道题只有一条约束，逐约束反馈在多约束任务上的作用仍需进一步测试。内容标签由一名审核者逐条复核，无法估计评分者间一致性。网关模型和服务状态可能变化，固定种子也无法保证重新生成完全相同的文本。
 
 ## 参考文献
 
-[1] V. Pyatkin *et al*., “Generalizing Verifiable Instruction Following,” *Advances in Neural Information Processing Systems*, 2025. [Online]. Available: https://arxiv.org/abs/2507.02833
+[1] J. Zhou *et al*., “Instruction-Following Evaluation for Large Language Models,” arXiv:2311.07911, 2023. [arXiv](https://arxiv.org/abs/2311.07911)
 
-[2] Allen Institute for AI, “IFBench,” GitHub repository. [Online]. Available: https://github.com/allenai/IFBench
+[2] V. Pyatkin *et al*., “Generalizing Verifiable Instruction Following,” in *Adv. Neural Inf. Process. Syst.*, vol. 38, 2025. [NeurIPS](https://proceedings.neurips.cc/paper_files/paper/2025/hash/46499a0622ecf568b72d17b61e45dbd5-Abstract-Datasets_and_Benchmarks_Track.html)
+
+[3] A. Madaan *et al*., “Self-Refine: Iterative Refinement with Self-Feedback,” in *Adv. Neural Inf. Process. Syst.*, vol. 36, 2023. [NeurIPS](https://proceedings.neurips.cc/paper_files/paper/2023/hash/91edff07232fb1b55a505a9e9f6c0ff3-Abstract-Conference.html)
+
+[4] Z. Gou *et al*., “CRITIC: Large Language Models Can Self-Correct with Tool-Interactive Critiquing,” in *Proc. Int. Conf. Learn. Represent.*, 2024. [ICLR](https://proceedings.iclr.cc/paper_files/paper/2024/hash/fef126561bbf9d4467dbb8d27334b8fe-Abstract-Conference.html)
 
 ## 学术诚信声明
 
-本项目应明确区分上游 IFBench 的数据、验证器与本项目的实验设计和分析，按课程要求引用使用的资料，并如实报告方法、结果和局限。不得将他人的成果或未经核验的结果冒充为自己的实验结论。
+本项目引用上游数据、验证器和相关工作。ChatGPT 和 Grok 辅助了实验代码开发与流程设计。报告由作者独立撰写，再使用生成式 AI 检查语法和润色句式。
 
 ## 许可证
 
-上游代码采用 Apache License 2.0，见 [LICENSE](LICENSE)；数据许可及第三方生成内容条款见上游项目 [2]。本项目新增部分的独立许可：TODO。
+上游代码采用 Apache License 2.0，见 [LICENSE](LICENSE)。数据许可与署名要求见[上游项目][ifbench-repo]。课程新增代码的单独授权条款 **TODO**。
+
+[ifbench-repo]: https://github.com/allenai/IFBench#license
