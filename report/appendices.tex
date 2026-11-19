@@ -104,6 +104,39 @@ Model & Contrast & Available & Complete & Missing fail \\
 \end{tabular}
 \end{table}
 
+Table~\ref{tab:text-changes} reports text changes among initially passing B0 answers. A revision is counted as changed if its text differs from B0 after splitting and rejoining whitespace. Percentages use the number of initially passing answers as the denominator. Table~\ref{tab:failure-structure} groups failing B0 answers by the number of constraints and failed constraints; $n$ is the number of failing B0 answers in each group, and B2 and B3 are the numbers repaired.
+
+\begin{table}[!t]
+\caption{Text changes among initially passing B0 answers.}
+\label{tab:text-changes}
+\centering\footnotesize
+\begin{tabular}{lrrrr}
+\toprule
+Model & $n$ & B1 changed & B2 changed & B3 changed \\
+\midrule
+gpt-4.1 & 138 & 89.1\% & 24.6\% & 33.3\% \\
+gpt-4o & 148 & 89.2\% & 27.7\% & 31.8\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[!t]
+\caption{Repairs by initial failure structure.}
+\label{tab:failure-structure}
+\centering\scriptsize
+\begin{tabular}{lrrrrrr}
+\toprule
+& \multicolumn{3}{c}{gpt-4.1} & \multicolumn{3}{c}{gpt-4o} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+B0 failure structure & $n$ & B2 & B3 & $n$ & B2 & B3 \\
+\midrule
+One constraint, failed & 92 & 29 & 21 & 84 & 30 & 24 \\
+Two constraints, one failed & 23 & 3 & 2 & 21 & 6 & 3 \\
+Two constraints, both failed & 6 & 0 & 0 & 6 & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \section{Revision Prompts}
 \label{app:prompts}
 For B0, the model received the unmodified IFBench user prompt. Each revision branch received the original user prompt, the B0 assistant response, and a new user message containing the following components in order. Sections labeled as templates below describe the message construction; the labels themselves were not sent to the model.

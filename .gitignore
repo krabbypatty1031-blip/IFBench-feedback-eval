@@ -25,3 +25,7 @@ data/*responses*.jsonl
 # New runs: runs/feedback_eval/dev/ and runs/feedback_eval/official/
 # Historical trial dirs stay here too and remain gitignored.
 runs/feedback_eval/
+
+# Local report and presentation files
+/report/
+/slides/

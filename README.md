@@ -16,7 +16,7 @@
 B2 相对 B0 的同题配对提升分别为 **9.65** 和 **10.04 个百分点**。内容审核覆盖全部 260 道测试题、两个模型和四种条件，共 2080 条回答：2046 条 complete、9 条 partial、17 条 incomplete、8 条 cannot_judge。把 complete 当作原任务正确后，B1/B2/B3 相对 B0 的内容完成率差异均不超过 0.77 个百分点，配对区间含零。完整表格及分母见[结果表](outputs/report_materials/RESULTS_TABLES.md)，具体回答见[案例](outputs/report_materials/CASE_STUDIES.md)。
 
 - 报告：[IEEE 草稿](report/report.tex)（本地编译 PDF 见 `report/build/report.pdf`；`build/` 被 Git 忽略）
-- PPT：[幻灯片](slides/slides.tex)、[讲稿](slides/speaker_notes.md)、[PDF](slides/slides.pdf)
+- PPT 旧版归档：[幻灯片](slides/archive/2026-11-16_before_redesign/slides.tex)、[讲稿](slides/archive/2026-11-16_before_redesign/speaker_notes.md)、[PDF](slides/archive/2026-11-16_before_redesign/slides.pdf)
 
 ## 目录结构
 

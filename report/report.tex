@@ -14,9 +14,11 @@
 
 \begin{document}
 \title{Verifier-Guided Revision for Instruction Following: Comparing Feedback Granularity on IFBench}
-\author{\IEEEauthorblockN{[Author name]}
+\author{\IEEEauthorblockN{Zhang Yanxiao (23222069) \quad Zou Boyu (23258527) \quad Zheng Haotian (23259051)}
 \IEEEauthorblockA{COMP4136 Natural Language Processing\\Hong Kong Baptist University}}
 \maketitle
+\thispagestyle{plain}
+\pagestyle{plain}
 
 \begin{abstract}
 Large language models can answer a question while missing or disobeying its output constraints, and revision can also introduce new violations. We evaluated whether verifier feedback supported more reliable revision on IFBench. Using two models, gpt-4.1 and gpt-4o, we compared three revision branches starting from a shared initial answer (B0): unaided self-revision (B1), revision with overall verifier feedback (B2), and revision with per-constraint feedback (B3). Each branch started independently from the same initial answer. Compared with B0, B2 increased paired strict prompt-level accuracy by 9.65 and 10.04 percentage points for the two models respectively. Both differences remained statistically significant in post-hoc cluster sign-flip tests with Holm correction. B1 had higher observed regression rates among initially passing answers than B2, while the comparison between B2 and B3 did not show a statistically significant difference. A content review covered all 260 test prompts and found that B2 achieved completion rates of 99.2\% for gpt-4.1 and 98.5\% for gpt-4o. After post-hoc paired comparisons, no statistically significant differences in completion rates were recognized between the revision conditions and B0 after Holm correction. Overall, verifier feedback improved strict instruction following in this experiment.
@@ -32,6 +34,13 @@ The central question this project addressed was whether overall verifier feedbac
 Our first contribution is a paired implementation that preserved the original prompts, branch independence, verifier outcomes, and recoverable generation records. Our second contribution is an analysis that separates net accuracy changes from repairs and regressions. Our third contribution is a content review connecting rule outcomes to human-confirmed completion labels. Together, these contributions address whether feedback helps, how it helps, and what the verifier score leaves unmeasured on the instruction following scenario.
 
 The results suggest that overall verifier feedback is a practical method to improving instruction following in this experiment. B2 increased paired strict accuracy by 9.65 percentage points for gpt-4.1 and 10.04 percentage points for gpt-4o. Its observed regression rates were only 5.1\% and 6.8\%, compared with 13.8\% and 10.8\% for B1. However, the evidence does not establish that per-constraint feedback was inferior because the B2 and B3 comparisons did not show statistically significant differences.
+
+\begin{figure*}[!t]
+  \centering
+  \scalebox{0.88}{\input{method_diagram.tex}}
+  \caption{Experimental workflow. Each revision branch independently receives the original prompt and the same B0 answer. The strict verifier supplies overall feedback to B2 and per-constraint feedback to B3. All available responses are evaluated; content completion is reviewed separately.}
+  \label{fig:method}
+\end{figure*}
 
 \section{Background Survey and Related Work}
 \subsection{Evaluating Instruction Following}
@@ -59,13 +68,6 @@ We revised both initially passing and failing answers because they were all rele
 All revision branches were instructed to review the previous answer against the original user message, preserve the original task and its constraints, and return only the final answer. This design aimed to avoid explanatory headings or additional formatting that could violate the original constraints.
 
 When the verifier reported that B0 had passed, B2 and B3 also allowed the model to leave the answer unchanged. The full prompt templates and message order are provided in Appendix~\ref{app:prompts}.
-\begin{figure*}[!t]
-  \centering
-  \input{method_diagram.tex}
-  \caption{Experimental workflow. Each revision branch independently receives the original prompt and the same B0 answer. The strict verifier supplies overall feedback to B2 and per-constraint feedback to B3. All available responses are evaluated; content completion is reviewed separately.}
-  \label{fig:method}
-\end{figure*}
-
 \section{Experimental Setup}
 \subsection{Data and Protocol Freeze}
 In our experiment, we used the IFBench dataset, which was divided into 40 development prompts and 260 test prompts. The experimental configuration and prompt hashes were saved before the formal run.
@@ -112,27 +114,53 @@ B3 & 59.1\% & 64.5\% & 64.9\% & 69.1\% \\
 \end{tabular}
 \end{table}
 \subsection{Effect of Verifier Feedback}
+Figure~\ref{fig:paired-effects} shows the paired differences in strict accuracy and their confidence intervals.
+
 Compared with B0, the strict pass rate of B2 largely increased by 9.65 percentage points for gpt-4.1 and 10.04 percentage points for gpt-4o. The differences remained statistically significant after Holm correction with adjusted ($p$)-values of 0.00042 and 0.00078, respectively.
 
 B3 also increased paired strict accuracy relative to B0 by 5.79 percentage points for gpt-4.1 and 7.72 percentage points for gpt-4o. Both differences remained statistically significant after correction.
 
 Although B2 had a higher observed strict pass rate than B3, the direct paired comparisons did not show statistically significant differences. B2$-$B3 was 3.86 percentage points for gpt-4.1 and 2.32 percentage points for gpt-4o, with adjusted ($p$)-values of 0.28661 and 0.40503, respectively. These results do not establish that the two conditions were equivalent or that B3 was inferior.
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/02_paired_effects_single.pdf}
+  \caption{Paired differences in strict prompt-level accuracy. Error bars show unadjusted 95\% cluster-bootstrap confidence intervals; an asterisk marks an exploratory comparison. The post-hoc sign-flip tests are reported separately in Appendix~\ref{app:statistics}.}
+  \label{fig:paired-effects}
+\end{figure}
 \subsection{Repairs and Regressions}
-In the observed paired results, B2 repaired more initially failing responses and caused fewer regressions than B1.
+In the observed paired results, B2 repaired more initially failing responses and caused fewer regressions than B1 (Fig.~\ref{fig:repair-regression}).
 
 For gpt-4.1, B1 repaired 27 of 121 initially failing responses and caused 19 of 138 initially passing responses to fail. B2 repaired 32 of 121 initially failing responses and caused 7 of 138 initially passing responses to fail.
 
 For gpt-4o, B1 repaired 25 of 111 initially failing responses and caused 16 of 148 initially passing responses to fail. B2 repaired 36 of 111 initially failing responses and caused 10 of 148 initially passing responses to fail.
 
 These results indicate that the B2 revision strategy was useful for both correcting failing responses and preserving passing responses in this experiment.
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/03_repair_regression_single.pdf}
+  \caption{Repair and regression rates by model and revision condition. Repair rates use initially failing B0 responses as the denominator; regression rates use initially passing B0 responses.}
+  \label{fig:repair-regression}
+\end{figure}
 \subsection{Content Review}
 We conducted a content review because passing the rule checks does not always mean that a response has fully completed the original task. Among the 2,080 experimental identities, 2,046 responses were marked as complete, 9 as partial, and 17 as incomplete. The remaining 8 could not be judged because the responses were empty or resulted from errors.
 
-From the 26 responses labelled partial or incomplete, we found that 7 partial and 12 incomplete answers still passed the strict verifier whereas 818 complete responses did not pass the strict check. Therefore, these findings show that a strict rule alone cannot determine whether a response adequately completes the original task.
+From the 26 responses labelled partial or incomplete, we found that 7 partial and 12 incomplete answers still passed the strict verifier whereas 818 complete responses did not pass the strict check (Fig.~\ref{fig:content-crosscheck}). Therefore, these findings show that a strict rule alone cannot determine whether a response adequately completes the original task.
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/04_content_crosscheck_single.pdf}
+  \caption{Strict verifier outcomes within each content-review category. Percentages use the number of responses in each category as the denominator. Eight responses without a content judgment are excluded; responses to the same prompt across models and conditions are paired.}
+  \label{fig:content-crosscheck}
+\end{figure}
 
 We also compared the content completion rates across the four conditions. For gpt-4.1, the rates were 99.2\% for B0, B1, and B2, and 98.5\% for B3. For gpt-4o, the corresponding rates were 98.5\%, 98.8\%, 98.5\%, and 98.1\%. These results illustrate that B2 achieved a high task completion rate while improving the strict constraint compliance relative to B0.
 
+\subsection{Discussion}
+We next examine possible reasons for the differences in strict revision outcomes across conditions. B2 had a higher observed strict accuracy than B1 by 6.56 percentage points on both models. The exploratory comparisons had Holm-adjusted p-values of 0.03790 for gpt-4.1 and 0.05587 for gpt-4o. We believe that differences in the revision prompts provide a reasonable explanation for this pattern. B1 required the model to check constraints and emphasized ``do not assume that these constraints have been met''. B2 received a verifier verdict and explicitly allowed the retention of the answers that had passed. This combination provided B2 with the basis to retain answers that had already passed the constraint checks, while B1 had to decide for itself whether changes were needed and could modify content that already satisfied the constraints, introducing new violations. The observed results support this explanation: B1 rewrote approximately 89\% of the initially passing answers, while B2 only rewrote approximately 25\%--28\% (Table~\ref{tab:text-changes}).
+
+In the test set, 220 of 260 questions contained only one constraint. For these questions, the failure information reported by B2 was sufficient to indicate that the sole constraint was not met. B3 then listed the constraint again, with very little additional failure-localization information added. Identifying the failed requirements more specifically did not necessarily enable the model to generate answers that met the requirements. Overall statistics also show this pattern: in answers with two constraints and only one failure, B3 repaired 2 and 3 items on the two models respectively, while B2 repaired 3 and 6 items; for answers with both constraints failing, neither condition repaired any answers (Table~\ref{tab:failure-structure}).
+
 \section{Case Study}
+The following cases illustrate a successful repair and a regression after revision.
 \subsection{Successful Repair with Overall Verifier Feedback}
 For item 173, the prompt asked whether pointwise convergence of polynomials on \([0,1]\) implies uniform convergence. It also required stop words to account for no more than 20\% of the response. The gpt-4.1 initial answer gave a mathematical counterexample but failed the strict constraint check:
 
@@ -143,10 +171,12 @@ No. Let \(B_n(x)=x^n\). For each \(x<1\), \(B_n(x)\to0\), while \(B_n(1)=1\). Th
 
 B2 received feedback that at least one output constraint had failed. Its revised answer passed the strict check:
 
+\begin{samepage}
 \noindent\textbf{B2 --- PASS}
 \begin{quote}
 No. Choose \(B_n(x)=x^n\). Pointwise limit: \(f(x)=0\) for \(x<1\), and \(f(1)=1\). Yet \(\sup_{x\in[0,1]}|B_n(x)-f(x)|=1\) for every \(n\). Therefore, convergence is not uniform.
 \end{quote}
+\end{samepage}
 
 Both answers used the same counterexample and reached the same conclusion. In this case, the revised answer satisfied the output constraint while retaining the main mathematical argument.
 \subsection{Regression after Self-Revision}
@@ -190,6 +220,21 @@ The content review showed that passing the output constraints did not always mea
   \item Report writing
   \item Presentation preparation
   \item Overall review and verification
+\end{itemize}
+
+\noindent\textbf{Zou Boyu (23258527)}
+\begin{itemize}
+  \item Result analysis
+  \item Root-cause analysis
+  \item Report writing
+  \item Presentation preparation
+  \item Review and verification
+\end{itemize}
+
+\noindent\textbf{Zheng Haotian (23259051)}
+\begin{itemize}
+  \item Presentation preparation
+  \item Document review
 \end{itemize}
 
 \section*{GenAI Use Declaration}
